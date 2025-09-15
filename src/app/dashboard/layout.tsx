@@ -43,32 +43,40 @@ export default function DashboardLayout({
             <SidebarMenuItem>
               <Link href="/dashboard" passHref>
                 <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
-                  <Home />
-                  Symptom Checker
+                  <a>
+                    <Home />
+                    Symptom Checker
+                  </a>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <Link href="/dashboard/chatbot" passHref>
                     <SidebarMenuButton asChild isActive={pathname === '/dashboard/chatbot'}>
-                        <Bot />
-                        Chatbot
+                        <a>
+                            <Bot />
+                            Chatbot
+                        </a>
                     </SidebarMenuButton>
                 </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <Link href="/dashboard/history" passHref>
                     <SidebarMenuButton asChild isActive={pathname === '/dashboard/history'}>
-                        <ClipboardList />
-                        History
+                        <a>
+                            <ClipboardList />
+                            History
+                        </a>
                     </SidebarMenuButton>
                 </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <Link href="/dashboard/about" passHref>
                     <SidebarMenuButton asChild isActive={pathname === '/dashboard/about'}>
-                        <Info />
-                        About
+                        <a>
+                            <Info />
+                            About
+                        </a>
                     </SidebarMenuButton>
                 </Link>
             </SidebarMenuItem>
