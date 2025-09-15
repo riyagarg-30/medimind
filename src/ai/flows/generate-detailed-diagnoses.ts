@@ -4,33 +4,10 @@
  * @fileOverview Generates a detailed diagnosis based on user symptoms and an optional report.
  *
  * - generateDetailedDiagnoses - A function that generates a detailed diagnosis.
- * - GenerateDetailedDiagnosesInput - The input type for the function.
- * - GenerateDetailedDiagnosesOutput - The return type for the function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-export const GenerateDetailedDiagnosesInputSchema = z.object({
-  symptoms: z.string().describe('The symptoms exhibited by the user.'),
-  reportDataUri: z.string().optional().describe(
-      "An optional medical report, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-});
-export type GenerateDetailedDiagnosesInput = z.infer<typeof GenerateDetailedDiagnosesInputSchema>;
-
-const ConditionSchema = z.object({
-    name: z.string().describe("The name of the possible medical condition."),
-    explanation: z.string().describe("A detailed, evidence-based explanation linking the user's symptoms to this condition."),
-    likelihood: z.enum(["High", "Medium", "Low"]).describe("The likelihood that the user has this condition based on the provided information."),
-});
-
-export const GenerateDetailedDiagnosesOutputSchema = z.object({
-    conditions: z.array(ConditionSchema).describe("A list of the most likely medical conditions."),
-    nextSteps: z.string().describe("Clear, actionable next steps for the user, such as 'Consult a primary care physician' or 'Visit an urgent care clinic within 24 hours'."),
-    disclaimer: z.string().describe("A mandatory disclaimer stating that this is an AI-generated analysis and not a substitute for professional medical advice."),
-});
-export type GenerateDetailedDiagnosesOutput = z.infer<typeof GenerateDetailedDiagnosesOutputSchema>;
+import { GenerateDetailedDiagnosesInputSchema, GenerateDetailedDiagnosesOutputSchema, type GenerateDetailedDiagnosesInput, type GenerateDetailedDiagnosesOutput } from '@/ai/types';
 
 export async function generateDetailedDiagnoses(input: GenerateDetailedDiagnosesInput): Promise<GenerateDetailedDiagnosesOutput> {
   return generateDetailedDiagnosesFlow(input);

@@ -4,28 +4,11 @@
  * @fileOverview Generates a simple list of diagnoses based on user symptoms and an optional report.
  *
  * - generateSimpleDiagnoses - A function that generates a list of likely diagnoses.
- * - GenerateSimpleDiagnosesInput - The input type for the function.
- * - GenerateSimpleDiagnosesOutput - The return type for the function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { GenerateSimpleDiagnosesInputSchema, GenerateSimpleDiagnosesOutputSchema, type GenerateSimpleDiagnosesInput, type GenerateSimpleDiagnosesOutput } from '@/ai/types';
 
-const GenerateSimpleDiagnosesInputSchema = z.object({
-  symptoms: z.string().describe('The symptoms exhibited by the user.'),
-  reportDataUri: z.string().optional().describe(
-      "An optional medical report, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-});
-export type GenerateSimpleDiagnosesInput = z.infer<typeof GenerateSimpleDiagnosesInputSchema>;
-
-const DiagnosisSchema = z.object({
-  diagnosis: z.string().describe('The diagnosis.'),
-  justification: z.string().describe('The evidence-based justification for the diagnosis.'),
-});
-
-const GenerateSimpleDiagnosesOutputSchema = z.array(DiagnosisSchema).describe('A list of likely diagnoses with justifications.');
-export type GenerateSimpleDiagnosesOutput = z.infer<typeof GenerateSimpleDiagnosesOutputSchema>;
 
 export async function generateSimpleDiagnoses(input: GenerateSimpleDiagnosesInput): Promise<GenerateSimpleDiagnosesOutput> {
   return generateSimpleDiagnosesFlow(input);

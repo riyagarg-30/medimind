@@ -4,23 +4,12 @@
  * @fileOverview A simple chatbot flow.
  *
  * - askChatbot - A function that returns a chatbot response.
- * - AskChatbotInput - The input type for the function.
  */
 
 import {ai} from '@/ai/genkit';
 import { Part } from 'genkit/cohere';
-import {z} from 'genkit';
-
-const HistoryMessageSchema = z.object({
-    role: z.enum(['user', 'model']),
-    parts: z.array(z.object({text: z.string()})),
-});
-
-export const AskChatbotInputSchema = z.object({
-  query: z.string().describe('The user\'s query.'),
-  history: z.array(HistoryMessageSchema).optional().describe('The conversation history.'),
-});
-export type AskChatbotInput = z.infer<typeof AskChatbotInputSchema>;
+import { AskChatbotInputSchema, type AskChatbotInput } from '@/ai/types';
+import { z } from 'genkit';
 
 export async function askChatbot(input: AskChatbotInput): Promise<string> {
   return chatbotFlow(input);

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { generateDetailedDiagnoses, GenerateDetailedDiagnosesOutput } from '@/ai/flows/generate-detailed-diagnoses';
+import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
+import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
