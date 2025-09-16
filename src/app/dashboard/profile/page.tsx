@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,11 +10,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera } from 'lucide-react';
 
 export default function ProfilePage() {
-    const [name, setName] = useState('Jane Doe');
-    const [email, setEmail] = useState('jane.doe@example.com');
-    const [age, setAge] = useState(28);
-    const [address, setAddress] = useState('456 Health Ave, Wellness Town');
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [age, setAge] = useState<number | ''>('');
+    const [address, setAddress] = useState('');
     const [profilePic, setProfilePic] = useState('https://picsum.photos/seed/101/128/128');
+
+    // To avoid hydration mismatch for the initial empty state
+    const [isClient, setIsClient] = useState(false);
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -52,19 +58,19 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="name">Full Name</Label>
-                            <Input id="name" value={name} onChange={e => setName(e.target.value)} />
+                            {isClient && <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Jane Doe" />}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email Address</Label>
-                            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                            {isClient && <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jane.doe@example.com"/>}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="age">Age</Label>
-                            <Input id="age" type="number" value={age} onChange={e => setAge(Number(e.target.value))} />
+                            {isClient && <Input id="age" type="number" value={age} onChange={e => setAge(e.target.value === '' ? '' : Number(e.target.value))} placeholder="28" />}
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="address">Address</Label>
-                            <Input id="address" value={address} onChange={e => setAddress(e.target.value)} />
+                            {isClient && <Input id="address" value={address} onChange={e => setAddress(e.target.value)} placeholder="456 Health Ave, Wellness Town"/>}
                         </div>
                     </div>
                 </CardContent>
