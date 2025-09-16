@@ -20,8 +20,8 @@ type ChatStep = 'gender' | 'pregnant' | 'period' | 'chatting';
 
 export default function ChatbotPage() {
   const [messages, setMessages] = useState<Message[]>([
-    { text: "Hi there! How are you feeling today?", sender: 'bot' },
-    { text: "First, can I ask — are you a man, woman, or other?", sender: 'bot' }
+    { text: "Hi there! I am a medical Q&A chatbot.", sender: 'bot' },
+    { text: "First, are you a man or woman?", sender: 'bot' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +53,7 @@ export default function ChatbotPage() {
         setMessages(prev => [...prev, { text: "Are you currently pregnant? (yes/no)", sender: 'bot' }]);
       } else {
         setChatStep('chatting');
-        setMessages(prev => [...prev, { text: "Alright, thank you for sharing. Now tell me your symptoms (or just chat with me).", sender: 'bot' }]);
+        setMessages(prev => [...prev, { text: "Great. Now tell me your symptoms one by one.", sender: 'bot' }]);
       }
     } else if (chatStep === 'pregnant') {
       setIsPregnant(value);
@@ -62,7 +62,7 @@ export default function ChatbotPage() {
     } else if (chatStep === 'period') {
       setIsOnPeriod(value);
       setChatStep('chatting');
-      setMessages(prev => [...prev, { text: "Alright, thank you for sharing. Now tell me your symptoms (or just chat with me).", sender: 'bot' }]);
+      setMessages(prev => [...prev, { text: "Great. Now tell me your symptoms one by one.", sender: 'bot' }]);
     }
   };
 
@@ -106,7 +106,6 @@ export default function ChatbotPage() {
                 <div className="flex justify-center p-2">
                     <Button variant="outline" className={commonButtonClasses} onClick={() => handleInitialSetup('man')}>Man</Button>
                     <Button variant="outline" className={commonButtonClasses} onClick={() => handleInitialSetup('woman')}>Woman</Button>
-                    <Button variant="outline" className={commonButtonClasses} onClick={() => handleInitialSetup('other')}>Other</Button>
                 </div>
             );
         case 'pregnant':
@@ -126,8 +125,8 @@ export default function ChatbotPage() {
     <div className="flex flex-col h-[calc(100vh-5rem)] p-4 md:p-8">
       <Card className="flex-1 flex flex-col">
         <CardHeader>
-          <CardTitle>Medical Chatbot</CardTitle>
-          <CardDescription>Ask me anything about your symptoms, conditions, or general health.</CardDescription>
+          <CardTitle>Medical Q&A Chatbot</CardTitle>
+          <CardDescription>I share general health info only. This is not a diagnosis.</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
           <ScrollArea className="flex-1 p-4 border rounded-lg bg-secondary/30" ref={scrollAreaRef}>
@@ -178,7 +177,7 @@ export default function ChatbotPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
-                    placeholder="Type your message..."
+                    placeholder="Type your symptoms..."
                     disabled={isLoading}
                     />
                     <Button onClick={handleSendMessage} disabled={isLoading || !input.trim()}>
