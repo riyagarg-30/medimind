@@ -57,7 +57,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
         <div className="w-full max-w-4xl">
-            <Card>
+            <Card className="transition-all hover:shadow-lg">
                 <CardHeader>
                     <CardTitle>Symptom Checker</CardTitle>
                     <CardDescription>
@@ -106,7 +106,7 @@ export default function DashboardPage() {
 
         {diagnosis && (
         <div className="w-full max-w-4xl mt-8">
-            <Card>
+            <Card className="transition-all hover:shadow-xl">
                 <CardHeader>
                     <CardTitle>Detailed Diagnostic Analysis</CardTitle>
                      <CardDescription>
@@ -118,7 +118,7 @@ export default function DashboardPage() {
                         <h3 className="text-xl font-semibold">Possible Conditions</h3>
                         <ul className="space-y-4">
                         {diagnosis.conditions.map((condition, index) => (
-                            <li key={index} className="p-4 bg-secondary/50 rounded-lg">
+                            <li key={index} className="p-4 bg-secondary/50 rounded-lg transition-transform hover:scale-[1.02]">
                             <div className="flex justify-between items-start">
                                 <h4 className="font-semibold text-lg">{condition.name}</h4>
                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
