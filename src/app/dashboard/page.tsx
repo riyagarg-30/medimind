@@ -10,6 +10,7 @@ import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnose
 import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
 import { Loader2, FileUp } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { motion } from 'framer-motion';
 
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
