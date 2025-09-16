@@ -24,6 +24,8 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function DashboardLayout({
   children,
@@ -66,7 +68,11 @@ export default function DashboardLayout({
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
+        <motion.header 
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card/80 backdrop-blur-sm px-4 sm:px-6">
             <div className="flex items-center gap-4">
                 <SidebarTrigger/>
                 <div className="hidden md:flex items-center gap-2">
@@ -76,16 +82,24 @@ export default function DashboardLayout({
             </div>
             
             <nav className="hidden md:flex items-center gap-2">
-              {navItems.map((item) => (
-                 <Link href={item.href} key={item.href} passHref>
-                    <Button variant={item.isActive ? "secondary" : "ghost"} size="sm">
-                      {item.label}
-                    </Button>
-                 </Link>
+              {navItems.map((item, index) => (
+                 <motion.div
+                    key={item.href}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * index, duration: 0.3 }}
+                  >
+                    <Link href={item.href} passHref>
+                        <Button variant={item.isActive ? "secondary" : "ghost"} size="sm">
+                        {item.label}
+                        </Button>
+                    </Link>
+                 </motion.div>
               ))}
             </nav>
 
             <div className="relative ml-auto flex-1 md:grow-0"></div>
+            <ThemeToggle />
             <Link href="/dashboard/profile">
                 <Avatar>
                     <AvatarImage
@@ -96,7 +110,7 @@ export default function DashboardLayout({
                     <AvatarFallback>U</AvatarFallback>
                 </Avatar>
             </Link>
-        </header>
+        </motion.header>
         <main className="flex-1 overflow-auto">{children}</main>
       </SidebarInset>
     </SidebarProvider>
