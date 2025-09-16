@@ -19,7 +19,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateDetailedDiagnosesOutputSchema},
   prompt: `You are an expert medical AI assistant. Your purpose is to provide a detailed, structured, and safe preliminary diagnosis based on user-provided information.
 
-  Analyze the following symptoms and/or medical report.
+  Analyze the following symptoms and/or medical report in great detail. If a medical report is provided, extract all relevant medical data, values, and observations before making your analysis.
 
   Symptoms: {{{symptoms}}}
   {{#if reportDataUri}}

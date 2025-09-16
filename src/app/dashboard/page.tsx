@@ -8,28 +8,36 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
 import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FileUp } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
   const [report, setReport] = useState<File | null>(null);
+  const [fileName, setFileName] = useState('');
   const [diagnosis, setDiagnosis] = useState<GenerateDetailedDiagnosesOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleReportUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
-      setReport(event.target.files[0]);
+      const file = event.target.files[0];
+      setReport(file);
+      setFileName(file.name);
     }
   };
 
   const handleSubmit = async () => {
+    if (!symptoms && !report) return;
+    
     setIsLoading(true);
     setDiagnosis(null);
 
-    const performAnalysis = async (reportDataUri: string) => {
+    const performAnalysis = async (reportDataUri: string | null) => {
         try {
-            const result = await generateDetailedDiagnoses({ symptoms, reportDataUri });
+            const result = await generateDetailedDiagnoses({ 
+                symptoms, 
+                reportDataUri: reportDataUri || undefined 
+            });
             setDiagnosis(result);
             // In a real app, you would save this to the user's history here.
         } catch (error) {
@@ -49,14 +57,19 @@ export default function DashboardPage() {
         setIsLoading(false);
       }
     } else {
-       performAnalysis('');
+       performAnalysis(null);
     }
   };
 
 
   return (
     <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
-        <div className="w-full max-w-4xl">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full max-w-4xl"
+        >
             <Card className="transition-all hover:shadow-lg">
                 <CardHeader>
                     <CardTitle>Symptom Checker</CardTitle>
@@ -76,8 +89,17 @@ export default function DashboardPage() {
                     />
                     </div>
                     <div className="grid w-full gap-1.5">
-                    <Label htmlFor="report">Upload Report (Optional)</Label>
-                    <input id="report" type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={handleReportUpload} className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90" />
+                        <Label htmlFor="report">Upload Report (PDF, PNG, JPG)</Label>
+                        <div className="flex items-center gap-4">
+                            <Button asChild variant="outline" className="relative cursor-pointer">
+                                <label htmlFor="report-upload">
+                                    <FileUp className="mr-2" />
+                                    Choose File
+                                </label>
+                            </Button>
+                            <input id="report-upload" type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg" onChange={handleReportUpload} />
+                            {fileName && <span className="text-sm text-muted-foreground">{fileName}</span>}
+                        </div>
                     </div>
                 </CardContent>
                 <CardFooter>
@@ -87,25 +109,34 @@ export default function DashboardPage() {
                     </Button>
                 </CardFooter>
             </Card>
-        </div>
+        </motion.div>
 
         {isLoading && (
-            <div className="w-full max-w-4xl mt-8">
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="w-full max-w-4xl mt-8"
+            >
                 <Card>
                     <CardHeader>
                         <CardTitle>Analysis in Progress</CardTitle>
-                        <CardDescription>Our AI is analyzing your information. This may take a moment.</CardDescription>
+                        <CardDescription>Our AI is analyzing your information. This may take a moment, especially with PDF files.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center p-12 space-y-4">
                         <Loader2 className="h-16 w-16 animate-spin text-primary" />
                         <p className="text-muted-foreground">Analyzing symptoms and reports...</p>
                     </CardContent>
                 </Card>
-            </div>
+            </motion.div>
         )}
 
         {diagnosis && (
-        <div className="w-full max-w-4xl mt-8">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="w-full max-w-4xl mt-8"
+        >
             <Card className="transition-all hover:shadow-xl">
                 <CardHeader>
                     <CardTitle>Detailed Diagnostic Analysis</CardTitle>
@@ -149,7 +180,7 @@ export default function DashboardPage() {
 
                 </CardContent>
             </Card>
-        </div>
+        </motion.div>
         )}
     </div>
   );
