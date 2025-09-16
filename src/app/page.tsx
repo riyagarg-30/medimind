@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,8 +10,28 @@ import { Logo } from "@/components/icons";
 import Link from "next/link";
 import { motion } from 'framer-motion';
 import Image from "next/image";
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [address, setAddress] = useState('');
+    const [age, setAge] = useState('');
+    const [password, setPassword] = useState('');
+    const router = useRouter();
+
+    const handleCreateAccount = () => {
+        const userDetails = {
+            name,
+            email,
+            address,
+            age,
+            profilePic: 'https://picsum.photos/seed/101/128/128'
+        };
+        localStorage.setItem('userDetails', JSON.stringify(userDetails));
+        router.push('/dashboard');
+    };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen bg-background">
        <div className="flex items-center justify-center p-4 py-8">
@@ -37,32 +58,30 @@ export default function SignupPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" placeholder="John Doe" required />
+                        <Input id="name" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="m@example.com" required />
+                        <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
                         </div>
                     </div>
                     <div className="space-y-2">
                     <Label htmlFor="address">Address</Label>
-                    <Input id="address" placeholder="123 Wellness St, Health City" required />
+                    <Input id="address" placeholder="123 Wellness St, Health City" required value={address} onChange={(e) => setAddress(e.target.value)} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="age">Age</Label>
-                            <Input id="age" type="number" placeholder="30" required />
+                            <Input id="age" type="number" placeholder="30" required value={age} onChange={(e) => setAge(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
-                            <Input id="password" type="password" required />
+                            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                         </div>
                     </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
-                    <Link href="/dashboard" className="w-full">
-                    <Button className="w-full">Create Account</Button>
-                    </Link>
+                    <Button className="w-full" onClick={handleCreateAccount}>Create Account</Button>
                     <p className="text-xs text-center text-muted-foreground">
                     Already have an account?{' '}
                     <a href="#" className="underline">

@@ -1,9 +1,20 @@
 
+'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClipboardList, FileText, Stethoscope } from "lucide-react";
+import { useState, useEffect } from "react";
 
-// This is mock data. In a real application, you would fetch this from a database.
-const MOCK_HISTORY = [
+// In a real application, you would fetch this from a database.
+type HistoryItem = {
+    id: number;
+    date: string;
+    inputType: "Symptoms" | "Report";
+    input: string;
+    result: string;
+};
+
+const MOCK_HISTORY: HistoryItem[] = [
     {
         id: 1,
         date: "2024-07-28",
@@ -29,6 +40,22 @@ const MOCK_HISTORY = [
 
 
 export default function HistoryPage() {
+    const [history, setHistory] = useState<HistoryItem[]>([]);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+        // In a real app, you'd fetch user-specific history.
+        // For now, we use mock data and potentially load from local storage if needed.
+        const savedHistory = localStorage.getItem('symptomHistory');
+        if (savedHistory) {
+            setHistory(JSON.parse(savedHistory));
+        } else {
+            setHistory(MOCK_HISTORY);
+        }
+    }, []);
+
+
   return (
     <div className="p-4 md:p-8">
         <Card>
@@ -39,9 +66,9 @@ export default function HistoryPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                {MOCK_HISTORY.length > 0 ? (
+                {isClient && history.length > 0 ? (
                     <ul className="space-y-4">
-                        {MOCK_HISTORY.map((item) => (
+                        {history.map((item) => (
                             <li key={item.id} className="p-4 bg-secondary/30 rounded-lg flex items-start gap-4">
                                 <div className="p-3 bg-secondary rounded-full">
                                     {item.inputType === 'Symptoms' ? <Stethoscope className="text-primary" /> : <FileText className="text-primary" />}

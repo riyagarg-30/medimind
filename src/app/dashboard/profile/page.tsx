@@ -8,18 +8,28 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
+    const { toast } = useToast();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [age, setAge] = useState<number | ''>('');
     const [address, setAddress] = useState('');
     const [profilePic, setProfilePic] = useState('https://picsum.photos/seed/101/128/128');
-
-    // To avoid hydration mismatch for the initial empty state
     const [isClient, setIsClient] = useState(false);
+
     useEffect(() => {
         setIsClient(true);
+        const savedDetails = localStorage.getItem('userDetails');
+        if (savedDetails) {
+            const userDetails = JSON.parse(savedDetails);
+            setName(userDetails.name || '');
+            setEmail(userDetails.email || '');
+            setAge(userDetails.age || '');
+            setAddress(userDetails.address || '');
+            setProfilePic(userDetails.profilePic || 'https://picsum.photos/seed/101/128/128');
+        }
     }, []);
 
     const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,6 +40,21 @@ export default function ProfilePage() {
             };
             reader.readAsDataURL(e.target.files[0]);
         }
+    };
+
+    const handleSaveChanges = () => {
+        const userDetails = {
+            name,
+            email,
+            age,
+            address,
+            profilePic,
+        };
+        localStorage.setItem('userDetails', JSON.stringify(userDetails));
+        toast({
+            title: "Profile Updated",
+            description: "Your information has been successfully saved.",
+        });
     };
 
     return (
@@ -46,7 +71,9 @@ export default function ProfilePage() {
                         <div className="relative">
                             <Avatar className="h-32 w-32 border-4 border-primary/20">
                                 <AvatarImage src={profilePic} alt="Profile picture" data-ai-hint="female portrait" />
-                                <AvatarFallback>JD</AvatarFallback>
+                                <AvatarFallback>
+                                    {name?.charAt(0).toUpperCase() || 'U'}
+                                </AvatarFallback>
                             </Avatar>
                             <label htmlFor="profile-pic-upload" className="absolute bottom-1 right-1 bg-primary text-primary-foreground p-2 rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
                                 <Camera className="h-5 w-5" />
@@ -75,7 +102,7 @@ export default function ProfilePage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button>Save Changes</Button>
+                    <Button onClick={handleSaveChanges}>Save Changes</Button>
                 </CardFooter>
             </Card>
         </div>
