@@ -26,6 +26,7 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { ChatWidget } from '@/components/chat-widget';
 
 export default function DashboardLayout({
   children,
@@ -34,11 +35,10 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const navItems = [
-    { href: "/dashboard", icon: <Home />, label: "Symptom Checker", isActive: pathname === '/dashboard' },
-    { href: "/dashboard/chatbot", icon: <Bot />, label: "Chatbot", isActive: pathname === '/dashboard/chatbot' },
-    { href: "/dashboard/history", icon: <ClipboardList />, label: "History", isActive: pathname === '/dashboard/history' },
-    { href: "/dashboard/profile", icon: <User />, label: "Profile", isActive: pathname === '/dashboard/profile' },
-    { href: "/dashboard/about", icon: <Info />, label: "About", isActive: pathname === '/dashboard/about' },
+    { href: "/dashboard", icon: <Home />, label: "Symptom Checker" },
+    { href: "/dashboard/history", icon: <ClipboardList />, label: "History" },
+    { href: "/dashboard/profile", icon: <User />, label: "Profile" },
+    { href: "/dashboard/about", icon: <Info />, label: "About" },
   ]
 
   return (
@@ -54,12 +54,10 @@ export default function DashboardLayout({
           <SidebarMenu>
             {navItems.map((item) => (
                <SidebarMenuItem key={item.href}>
-                <Link href={item.href} passHref legacyBehavior>
-                  <SidebarMenuButton asChild isActive={item.isActive}>
-                    <a>
+                <Link href={item.href}>
+                  <SidebarMenuButton isActive={pathname === item.href}>
                       {item.icon}
                       {item.label}
-                    </a>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
@@ -90,7 +88,7 @@ export default function DashboardLayout({
                     transition={{ delay: 0.1 * index, duration: 0.3 }}
                   >
                     <Link href={item.href} passHref>
-                        <Button variant={item.isActive ? "secondary" : "ghost"} size="sm">
+                        <Button variant={pathname === item.href ? "secondary" : "ghost"} size="sm">
                         {item.label}
                         </Button>
                     </Link>
@@ -112,6 +110,7 @@ export default function DashboardLayout({
             </Link>
         </motion.header>
         <main className="flex-1 overflow-auto">{children}</main>
+        <ChatWidget />
       </SidebarInset>
     </SidebarProvider>
   );
