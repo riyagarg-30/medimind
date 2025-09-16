@@ -12,7 +12,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 // Knowledge Base based on the Python script
 const KB = {
     "Common Cold": {
-        "symptoms": ["cold", "runny nose", "sneezing", "cough", "congestion", "sore throat"],
         "description": "A mild viral infection of the nose and throat.",
         "causes": "Usually caused by rhinovirus or similar viruses.",
         "advice": "Rest, hydration, warm fluids, steam inhalation.",
@@ -20,31 +19,27 @@ const KB = {
         "triage": "Routine"
     },
     "Fever": {
-        "symptoms": ["fever", "temperature", "chills"],
         "description": "A rise in body temperature, often due to infection.",
         "causes": "Viral or bacterial infection, inflammation, heat exhaustion.",
         "advice": "Drink fluids, rest, wear light clothes.",
-        "medicine": "Paracetamol or ibuprofen. See doctor if >3 days.",
+        "medicine": "Paracetamol or ibuprofen. Doctor visit if >3 days.",
         "triage": "Routine"
     },
     "Flu": {
-        "symptoms": ["fever", "cough", "body pain", "fatigue", "headache"],
         "description": "Influenza, a viral respiratory infection.",
         "causes": "Caused by influenza virus, spreads through droplets.",
         "advice": "Rest, fluids, avoid contact with others.",
-        "medicine": "Paracetamol, antivirals only if prescribed.",
+        "medicine": "Paracetamol for fever, antivirals only if doctor prescribes.",
         "triage": "Routine"
     },
     "Chest Pain": {
-        "symptoms": ["chest pain", "tight chest", "shortness of breath"],
         "description": "Pain in chest, possibly heart-related.",
         "causes": "Could be heart attack, angina, lung issue, reflux, or muscle strain.",
-        "advice": "If severe or sudden → emergency. If mild and movement-related, may be muscle pain.",
-        "medicine": "No self-medication. Aspirin only in suspected heart attack until help arrives.",
+        "advice": "If severe or sudden → EMERGENCY. If mild and movement-related, may be muscle pain.",
+        "medicine": "No self-medication. Aspirin only if suspected heart attack until help arrives.",
         "triage": "Emergency"
     },
     "Headache": {
-        "symptoms": ["headache", "migraine", "head pain"],
         "description": "Pain in head, common but sometimes serious.",
         "causes": "Stress, dehydration, migraine, sinus infection, rarely brain issues.",
         "advice": "Rest, hydration, dim lights if migraine.",
@@ -52,7 +47,6 @@ const KB = {
         "triage": "Routine"
     },
     "Stomach Pain": {
-        "symptoms": ["stomach pain", "abdominal pain", "cramps"],
         "description": "Pain in abdominal region.",
         "causes": "Could be indigestion, food poisoning, ulcers, appendicitis.",
         "advice": "Rest, avoid spicy food, hydrate.",
@@ -60,7 +54,6 @@ const KB = {
         "triage": "Routine"
     },
     "Diabetes": {
-        "symptoms": ["frequent urination", "excessive thirst", "weight loss", "fatigue"],
         "description": "A chronic condition affecting sugar metabolism.",
         "causes": "Insulin deficiency or resistance.",
         "advice": "Follow diabetic diet, exercise, regular sugar check.",
@@ -68,7 +61,6 @@ const KB = {
         "triage": "Chronic"
     },
     "Hypertension": {
-        "symptoms": ["high blood pressure", "dizziness", "headache", "blurred vision"],
         "description": "High blood pressure often without symptoms.",
         "causes": "Stress, obesity, salt intake, genetics.",
         "advice": "Low-salt diet, regular exercise, stress management.",
@@ -76,7 +68,6 @@ const KB = {
         "triage": "Chronic"
     },
     "Back Pain": {
-        "symptoms": ["back pain", "lower back pain", "spinal pain"],
         "description": "Pain in back, common in adults.",
         "causes": "Poor posture, muscle strain, slipped disc.",
         "advice": "Rest, correct posture, light stretching.",
@@ -84,7 +75,6 @@ const KB = {
         "triage": "Routine"
     },
     "Skin Rash": {
-        "symptoms": ["skin rash", "itching", "redness"],
         "description": "Red patches or irritation on skin.",
         "causes": "Allergy, infection, eczema.",
         "advice": "Avoid scratching, keep area clean.",
@@ -92,7 +82,6 @@ const KB = {
         "triage": "Routine"
     },
     "Anemia": {
-        "symptoms": ["fatigue", "weakness", "pale skin", "dizziness"],
         "description": "Low hemoglobin levels.",
         "causes": "Iron deficiency, chronic disease, blood loss.",
         "advice": "Eat iron-rich food, check blood test.",
@@ -100,19 +89,17 @@ const KB = {
         "triage": "Routine"
     },
     "Period Pain": {
-        "symptoms": ["period pain", "menstrual cramps"],
         "description": "Cramping during menstruation.",
         "causes": "Uterine contractions during cycle.",
         "advice": "Heating pad, warm water, relaxation.",
-        "medicine": "Ibuprofen/mefenamic acid (doctor guided).",
+        "medicine": "Ibuprofen or mefenamic acid (doctor guided).",
         "triage": "Routine"
     },
     "Morning Sickness": {
-        "symptoms": ["pregnancy nausea", "vomiting", "morning sickness"],
         "description": "Nausea/vomiting in pregnancy.",
         "causes": "Hormonal changes (high hCG).",
         "advice": "Eat small meals, avoid spicy food.",
-        "medicine": "Vitamin B6, but only with doctor’s approval.",
+        "medicine": "Vitamin B6 (only with doctor’s approval).",
         "triage": "Routine"
     }
 };
@@ -252,10 +239,20 @@ export default function ChatbotPage() {
     const renderResults = (results: string[]) => {
         const risky = ["Chest Pain", "Fever", "Flu"];
         const hasMultipleRisky = results.filter(s => risky.includes(s)).length > 1;
+        
+        const filteredResults = results.filter(condName => {
+            if (condName === "Morning Sickness" && (gender !== 'woman' || isPregnant !== 'yes')) {
+                return false;
+            }
+            if (condName === "Period Pain" && (gender !== 'woman' || isOnPeriod !== 'yes')) {
+                return false;
+            }
+            return true;
+        })
 
         return (
             <div className="space-y-4 mt-2">
-                {results.map(condName => {
+                {filteredResults.map(condName => {
                     const data = KB[condName as keyof typeof KB];
                     if (!data) return null;
                     return (
@@ -267,10 +264,7 @@ export default function ChatbotPage() {
                             <p><span className="font-semibold">💊 Medicine:</span> {data.medicine}</p>
                             <p><span className="font-semibold">🚨 Triage:</span> {data.triage}</p>
                              {gender === 'woman' && isPregnant === 'yes' && (
-                                <p className="text-destructive font-semibold mt-1">⚠️ Since you are pregnant, avoid self-medication. Consult doctor first.</p>
-                            )}
-                            {gender === 'woman' && isOnPeriod === 'yes' && condName !== "Period Pain" && (
-                                <p className="text-amber-600 font-semibold mt-1">ℹ️ Note: Some symptoms may overlap with period-related changes.</p>
+                                <p className="text-destructive font-semibold mt-1">⚠️ Since you are pregnant, avoid self-medicating. Confirm with your doctor first.</p>
                             )}
                         </div>
                     )
@@ -338,5 +332,3 @@ const AvatarIcon = ({ children }: { children: React.ReactNode }) => (
         {children}
     </div>
 )
-
-    
