@@ -238,7 +238,6 @@ export default function ChatbotPage() {
 
     const renderResults = (results: string[]) => {
         const risky = ["Chest Pain", "Fever", "Flu"];
-        const hasMultipleRisky = results.filter(s => risky.includes(s)).length > 1;
         
         const filteredResults = results.filter(condName => {
             if (condName === "Morning Sickness" && (gender !== 'woman' || isPregnant !== 'yes')) {
@@ -249,6 +248,8 @@ export default function ChatbotPage() {
             }
             return true;
         })
+        
+        const hasMultipleRisky = filteredResults.filter(s => risky.includes(s)).length > 1;
 
         return (
             <div className="space-y-4 mt-2">
