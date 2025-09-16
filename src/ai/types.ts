@@ -16,13 +16,27 @@ const ConditionSchema = z.object({
     likelihood: z.enum(["High", "Medium", "Low"]).describe("The likelihood that the user has this condition based on the provided information."),
     differentialDiagnoses: z.array(z.string()).describe("A list of other possible conditions to consider."),
     medications: z.array(z.string()).describe("A list of common medications, with a disclaimer to consult a doctor."),
+    evidence: z.array(z.string()).describe("List of specific data points (e.g., 'Hemoglobin = 8 g/dL') supporting this diagnosis."),
+});
+
+const DataQualitySchema = z.object({
+    score: z.number().int().min(0).max(100).describe("A score from 0-100 representing the quality and completeness of the provided data."),
+    suggestions: z.array(z.string()).describe("Actionable suggestions to improve data quality, e.g., 'Upload higher resolution scan'.")
+});
+
+const RedFlagSchema = z.object({
+    finding: z.string().describe("The specific finding that triggered the red flag (e.g., 'Hemoglobin < 7 g/dL')."),
+    reasoning: z.string().describe("The clinical reasoning for why this is a red flag (e.g., 'Critical anemia risk').")
 });
 
 export const GenerateDetailedDiagnosesOutputSchema = z.object({
-    conditions: z.array(ConditionSchema).describe("A list of the most likely medical conditions."),
+    conditions: z.array(ConditionSchema).describe("A list of the most likely medical conditions, ranked by likelihood."),
     riskScore: z.number().int().min(0).max(100).describe("An overall risk score from 0 to 100."),
     vitalsToMonitor: z.array(z.string()).describe("A list of key vital signs the user should monitor."),
-    nextSteps: z.string().describe("Clear, actionable next steps for the user, such as 'Consult a primary care physician' or 'Visit an urgent care clinic within 24 hours'."),
+    nextSteps: z.string().describe("Clear, actionable next steps for the user."),
+    dataQuality: DataQualitySchema.describe("An assessment of the input data quality."),
+    redFlags: z.array(RedFlagSchema).describe("A list of any urgent or life-threatening findings detected."),
+    summaryReport: z.string().describe("A fully explainable natural language diagnostic report summarizing all findings."),
     disclaimer: z.string().describe("A mandatory disclaimer stating that this is an AI-generated analysis and not a substitute for professional medical advice."),
 });
 export type GenerateDetailedDiagnosesOutput = z.infer<typeof GenerateDetailedDiagnosesOutputSchema>;

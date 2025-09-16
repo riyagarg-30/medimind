@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
 import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
-import { Loader2, FileUp, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, FileUp, AlertTriangle, ShieldAlert, CheckCircle, FileWarning } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
 import { ChartConfig, ChartContainer } from '@/components/ui/chart';
 import { Pie, PieChart, Cell } from 'recharts';
+import { Separator } from '@/components/ui/separator';
 
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
@@ -68,9 +69,9 @@ export default function DashboardPage() {
           saveToHistory(result);
         }
 
-      } catch (err) {
+      } catch (err: any) {
         console.error("Analysis failed:", err);
-        setError("An unexpected error occurred while performing the analysis. Please try again.");
+        setError(err.message || "An unexpected error occurred while performing the analysis. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -188,7 +189,7 @@ export default function DashboardPage() {
                     <CardTitle>Analysis Not Available</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p>{analysis.nextSteps || "The AI could not provide an analysis for the given input."}</p>
+                    <p>{analysis.summaryReport || "The AI could not provide an analysis for the given input."}</p>
                 </CardContent>
             </Card>
         </motion.div>
@@ -209,28 +210,78 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Summary Report</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{analysis.summaryReport}</p>
+                </CardContent>
+              </Card>
+
+              {analysis.redFlags && analysis.redFlags.length > 0 && (
+                <Alert variant="destructive">
+                    <ShieldAlert className="h-4 w-4" />
+                    <AlertTitle>Urgent Red Flags Detected!</AlertTitle>
+                    <AlertDescription>
+                        <ul className="list-disc list-inside mt-2">
+                           {analysis.redFlags.map((flag, i) => <li key={i}><b>{flag.finding}:</b> {flag.reasoning}</li>)}
+                        </ul>
+                    </AlertDescription>
+                </Alert>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <RiskChart riskScore={analysis.riskScore} />
                 <div className="md:col-span-2 space-y-4">
-                  <div>
-                    <h3 className="text-xl font-semibold">Recommended Next Steps</h3>
-                    <p className="text-sm text-primary">{analysis.nextSteps}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold">Vitals to Monitor</h3>
-                    <ul className="list-disc list-inside text-sm">
-                      {analysis.vitalsToMonitor.map((vital, i) => <li key={i}>{vital}</li>)}
-                    </ul>
-                  </div>
+                  <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Recommended Next Steps</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-primary font-semibold">{analysis.nextSteps}</p>
+                    </CardContent>
+                  </Card>
+                   <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Vitals to Monitor</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="list-disc list-inside text-sm">
+                            {analysis.vitalsToMonitor.map((vital, i) => <li key={i}>{vital}</li>)}
+                        </ul>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
+                
+              {analysis.dataQuality && (
+                <Card>
+                    <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                        {analysis.dataQuality.score > 70 ? <CheckCircle className="text-green-500" /> : <FileWarning className="text-yellow-500" />}
+                        <CardTitle className="text-lg">Data Quality Assessment</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>Quality Score: {analysis.dataQuality.score}/100</p>
+                        {analysis.dataQuality.suggestions && analysis.dataQuality.suggestions.length > 0 && (
+                            <div className="mt-2">
+                                <h4 className="font-semibold">Suggestions:</h4>
+                                <ul className="list-disc list-inside text-sm text-muted-foreground">
+                                    {analysis.dataQuality.suggestions.map((s, i) => <li key={i}>{s}</li>)}
+                                </ul>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+              )}
 
 
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold">Possible Conditions</h3>
                 <ul className="space-y-4">
                   {analysis.conditions.map((condition, index) => (
-                    <li key={index} className="p-4 bg-secondary/50 rounded-lg transition-transform hover:scale-[1.02]">
+                    <li key={index} className="p-4 bg-secondary/50 rounded-lg transition-transform hover:scale-[1.02] border">
                       <div className="flex justify-between items-start">
                         <h4 className="font-semibold text-lg text-primary">{condition.name}</h4>
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${condition.likelihood === 'High' ? 'bg-destructive/80 text-destructive-foreground' :
@@ -240,7 +291,17 @@ export default function DashboardPage() {
                           {condition.likelihood} Likelihood
                         </span>
                       </div>
+                      
+                      <Separator className="my-3" />
+
                       <p className="text-sm text-muted-foreground mt-2">{condition.explanation}</p>
+                      
+                       <div className="mt-4">
+                          <h5 className="font-semibold mb-1 text-sm">Evidence</h5>
+                          <ul className="list-disc list-inside text-sm text-muted-foreground">
+                            {condition.evidence.map(ev => <li key={ev}>{ev}</li>)}
+                          </ul>
+                        </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">
                         <div>
