@@ -11,6 +11,7 @@ import { Part } from 'genkit/cohere';
 import { AskChatbotInputSchema, type AskChatbotInput } from '@/ai/types';
 import { z } from 'genkit';
 
+// This flow is no longer used by the MCQ-style chatbot, but kept for potential future use.
 export async function askChatbot(input: AskChatbotInput): Promise<string> {
   return chatbotFlow(input);
 }
