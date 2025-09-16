@@ -65,7 +65,7 @@ export default function ChatbotPage() {
       const botResponse = await askChatbot({ query: input, history });
       const botMessage: Message = { text: botResponse, sender: 'bot' };
       setMessages((prev) => [...prev, botMessage]);
-    } catch (error) => {
+    } catch (error) {
       console.error('Chatbot error:', error);
       const errorMessage: Message = {
         text: 'Sorry, I encountered an error. Please try again.',
@@ -192,3 +192,5 @@ const AvatarIcon = ({ children }: { children: React.ReactNode }) => (
         {children}
     </div>
 )
+
+    
