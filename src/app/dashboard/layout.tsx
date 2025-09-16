@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 export default function DashboardLayout({
   children,
@@ -29,6 +30,13 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const navItems = [
+    { href: "/dashboard", icon: <Home />, label: "Symptom Checker", isActive: pathname === '/dashboard' },
+    { href: "/dashboard/chatbot", icon: <Bot />, label: "Chatbot", isActive: pathname === '/dashboard/chatbot' },
+    { href: "/dashboard/history", icon: <ClipboardList />, label: "History", isActive: pathname === '/dashboard/history' },
+    { href: "/dashboard/about", icon: <Info />, label: "About", isActive: pathname === '/dashboard/about' },
+  ]
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -40,52 +48,41 @@ export default function DashboardLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <Link href="/dashboard" passHref>
-                <SidebarMenuButton asChild isActive={pathname === '/dashboard'}>
-                  <a>
-                    <Home />
-                    Symptom Checker
-                  </a>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <Link href="/dashboard/chatbot" passHref>
-                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/chatbot'}>
-                        <a>
-                            <Bot />
-                            Chatbot
-                        </a>
-                    </SidebarMenuButton>
+            {navItems.map((item) => (
+               <SidebarMenuItem key={item.href}>
+                <Link href={item.href} passHref>
+                  <SidebarMenuButton asChild isActive={item.isActive}>
+                    <a>
+                      {item.icon}
+                      {item.label}
+                    </a>
+                  </SidebarMenuButton>
                 </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <Link href="/dashboard/history" passHref>
-                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/history'}>
-                        <a>
-                            <ClipboardList />
-                            History
-                        </a>
-                    </SidebarMenuButton>
-                </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <Link href="/dashboard/about" passHref>
-                    <SidebarMenuButton asChild isActive={pathname === '/dashboard/about'}>
-                        <a>
-                            <Info />
-                            About
-                        </a>
-                    </SidebarMenuButton>
-                </Link>
-            </SidebarMenuItem>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-card px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-            <SidebarTrigger className="md:hidden"/>
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 sm:px-6">
+            <div className="flex items-center gap-4">
+                <SidebarTrigger/>
+                <div className="hidden md:flex items-center gap-2">
+                    <Logo className="size-8 text-primary" />
+                    <h1 className="text-xl font-semibold">MediMind</h1>
+                </div>
+            </div>
+            
+            <nav className="hidden md:flex items-center gap-2">
+              {navItems.map((item) => (
+                 <Link href={item.href} key={item.href} passHref>
+                    <Button variant={item.isActive ? "secondary" : "ghost"} size="sm">
+                      {item.label}
+                    </Button>
+                 </Link>
+              ))}
+            </nav>
+
             <div className="relative ml-auto flex-1 md:grow-0"></div>
             <Avatar>
                 <AvatarImage
