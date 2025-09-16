@@ -5,27 +5,43 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, User, Bot, MessageCircle, X } from 'lucide-react';
+import { Loader2, User, Bot, X } from 'lucide-react';
 import { askChatbot } from '@/ai/flows/chatbot';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Logo } from './icons';
 
 type Message = {
   text: string;
   sender: 'user' | 'bot';
 };
 
+type ChatStep = 'gender' | 'pregnant' | 'period' | 'chatting';
+
+
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [gender, setGender] = useState<string | undefined>();
   const [isPregnant, setIsPregnant] = useState<string | undefined>();
   const [isOnPeriod, setIsOnPeriod] = useState<string | undefined>();
-  const [initialQuestionsDone, setInitialQuestionsDone] = useState(false);
+  const [chatStep, setChatStep] = useState<ChatStep>('gender');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const resetChat = () => {
+    setMessages([
+        { text: "Hi there! How are you feeling today?", sender: 'bot' },
+        { text: "First, can I ask — are you a man, woman, or other?", sender: 'bot' }
+    ]);
+    setInput('');
+    setIsLoading(false);
+    setGender(undefined);
+    setIsPregnant(undefined);
+    setIsOnPeriod(undefined);
+    setChatStep('gender');
+  }
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -37,28 +53,38 @@ export function ChatWidget() {
   }, [messages]);
   
   useEffect(() => {
-    // Reset state when widget is closed
-    if (!isOpen) {
-        setMessages([]);
-        setInput('');
-        setIsLoading(false);
-        setIsPregnant(undefined);
-        setIsOnPeriod(undefined);
-        setInitialQuestionsDone(false);
+    if (isOpen) {
+        resetChat();
     }
   }, [isOpen])
 
-  const handleInitialSetup = () => {
-      if(isPregnant !== undefined && isOnPeriod !== undefined) {
-        setInitialQuestionsDone(true);
-        // Start conversation with a greeting
-        const botMessage: Message = { text: 'Hello! Tell me your symptoms, or just chat 🙂', sender: 'bot' };
-        setMessages([botMessage]);
+  const handleInitialSetup = (value: string) => {
+    const userMessage: Message = { text: value, sender: 'user'};
+    setMessages(prev => [...prev, userMessage]);
+
+    if (chatStep === 'gender') {
+      setGender(value);
+      if (value === 'woman') {
+        setChatStep('pregnant');
+        setMessages(prev => [...prev, { text: "Are you currently pregnant? (yes/no)", sender: 'bot' }]);
+      } else {
+        setChatStep('chatting');
+        setMessages(prev => [...prev, { text: "Alright, thank you for sharing. Now tell me your symptoms (or just chat with me).", sender: 'bot' }]);
       }
-  }
+    } else if (chatStep === 'pregnant') {
+      setIsPregnant(value);
+      setChatStep('period');
+      setMessages(prev => [...prev, { text: "Are you on your period right now? (yes/no)", sender: 'bot' }]);
+    } else if (chatStep === 'period') {
+      setIsOnPeriod(value);
+      setChatStep('chatting');
+      setMessages(prev => [...prev, { text: "Alright, thank you for sharing. Now tell me your symptoms (or just chat with me).", sender: 'bot' }]);
+    }
+  };
+
 
   const handleSendMessage = async () => {
-    if (!input.trim() || !initialQuestionsDone) return;
+    if (!input.trim() || chatStep !== 'chatting') return;
 
     const userMessage: Message = { text: input, sender: 'user' };
     setMessages((prev) => [...prev, userMessage]);
@@ -71,7 +97,8 @@ export function ChatWidget() {
           parts: [{ text: m.text }],
       }));
       // Add context to history
-      history.unshift({role: 'user', parts: [{text: `Context: isPregnant: ${isPregnant === 'yes'}, isOnPeriod: ${isOnPeriod === 'yes'}`}]});
+      const contextMessage = `Context: gender: ${gender}, isPregnant: ${isPregnant === 'yes'}, isOnPeriod: ${isOnPeriod === 'yes'}`;
+      history.unshift({role: 'user', parts: [{text: contextMessage}]});
 
       const botResponse = await askChatbot({ query: input, history });
       const botMessage: Message = { text: botResponse, sender: 'bot' };
@@ -88,6 +115,30 @@ export function ChatWidget() {
     }
   };
 
+  const renderInitialQuestions = () => {
+      const commonButtonClasses = "m-1";
+      switch (chatStep) {
+          case 'gender':
+              return (
+                  <div className="flex justify-center p-2">
+                      <Button variant="outline" className={commonButtonClasses} onClick={() => handleInitialSetup('man')}>Man</Button>
+                      <Button variant="outline" className={commonButtonClasses} onClick={() => handleInitialSetup('woman')}>Woman</Button>
+                      <Button variant="outline" className={commonButtonClasses} onClick={() => handleInitialSetup('other')}>Other</Button>
+                  </div>
+              );
+          case 'pregnant':
+          case 'period':
+              return (
+                  <div className="flex justify-center p-2">
+                      <Button variant="outline" className={commonButtonClasses} onClick={() => handleInitialSetup('yes')}>Yes</Button>
+                      <Button variant="outline" className={commonButtonClasses} onClick={() => handleInitialSetup('no')}>No</Button>
+                  </div>
+              );
+          default:
+              return null;
+      }
+  }
+
 
   return (
     <>
@@ -97,10 +148,10 @@ export function ChatWidget() {
         >
             <Button 
                 size="icon" 
-                className="rounded-full w-16 h-16 bg-primary shadow-lg animate-bounce"
+                className="rounded-full w-16 h-16 bg-primary shadow-lg animate-bounce flex items-center justify-center"
                 onClick={() => setIsOpen(!isOpen)}
             >
-                {isOpen ? <X size={32} /> : <MessageCircle size={32} />}
+                {isOpen ? <X size={32} /> : <Logo className="size-8 text-primary-foreground" />}
             </Button>
         </motion.div>
         
@@ -114,106 +165,68 @@ export function ChatWidget() {
                 className="fixed bottom-28 right-8 z-40"
              >
                 <Card className="w-[380px] h-[600px] flex flex-col shadow-2xl">
-                     {!initialQuestionsDone ? (
-                        <>
-                            <CardHeader>
-                                <CardTitle>A couple of questions...</CardTitle>
-                                <CardDescription>This helps me provide more relevant information.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-8">
-                                <div className="space-y-4">
-                                    <Label className="text-base">Are you pregnant?</Label>
-                                    <RadioGroup onValueChange={setIsPregnant} value={isPregnant}>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="yes" id="popup-preg-yes" />
-                                            <Label htmlFor="popup-preg-yes">Yes</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="no" id="popup-preg-no" />
-                                            <Label htmlFor="popup-preg-no">No</Label>
-                                        </div>
-                                    </RadioGroup>
+                    <CardHeader>
+                        <CardTitle>Medical Chatbot</CardTitle>
+                        <CardDescription>Ask me anything about your health.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+                        <ScrollArea className="flex-1 p-4 border rounded-lg bg-secondary/30" ref={scrollAreaRef}>
+                            <div className="space-y-4">
+                            {messages.map((msg, index) => (
+                                <div
+                                key={index}
+                                className={`flex items-start gap-3 ${
+                                    msg.sender === 'user' ? 'justify-end' : ''
+                                }`}
+                                >
+                                {msg.sender === 'bot' && (
+                                    <AvatarIcon>
+                                    <Bot className="text-primary" />
+                                    </AvatarIcon>
+                                )}
+                                <div
+                                    className={`rounded-lg px-4 py-2 max-w-[80%] whitespace-pre-wrap ${
+                                    msg.sender === 'user'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-card'
+                                    }`}
+                                >
+                                    <p className="text-sm">{msg.text}</p>
                                 </div>
-                                <div className="space-y-4">
-                                    <Label className="text-base">Are you currently on your period?</Label>
-                                    <RadioGroup onValueChange={setIsOnPeriod} value={isOnPeriod}>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="yes" id="popup-period-yes" />
-                                            <Label htmlFor="popup-period-yes">Yes</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="no" id="popup-period-no" />
-                                            <Label htmlFor="popup-period-no">No</Label>
-                                        </div>
-                                    </RadioGroup>
+                                {msg.sender === 'user' && (
+                                    <AvatarIcon>
+                                    <User />
+                                    </AvatarIcon>
+                                )}
                                 </div>
-                                <Button onClick={handleInitialSetup} disabled={isPregnant === undefined || isOnPeriod === undefined}>Start Chat</Button>
-                            </CardContent>
-                        </>
-                    ) : (
-                        <>
-                            <CardHeader>
-                                <CardTitle>Medical Chatbot</CardTitle>
-                                <CardDescription>Ask me anything about your health.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
-                                <ScrollArea className="flex-1 p-4 border rounded-lg bg-secondary/30" ref={scrollAreaRef}>
-                                    <div className="space-y-4">
-                                    {messages.map((msg, index) => (
-                                        <div
-                                        key={index}
-                                        className={`flex items-start gap-3 ${
-                                            msg.sender === 'user' ? 'justify-end' : ''
-                                        }`}
-                                        >
-                                        {msg.sender === 'bot' && (
-                                            <AvatarIcon>
-                                            <Bot className="text-primary" />
-                                            </AvatarIcon>
-                                        )}
-                                        <div
-                                            className={`rounded-lg px-4 py-2 max-w-[80%] whitespace-pre-wrap ${
-                                            msg.sender === 'user'
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'bg-card'
-                                            }`}
-                                        >
-                                            <p className="text-sm">{msg.text}</p>
-                                        </div>
-                                        {msg.sender === 'user' && (
-                                            <AvatarIcon>
-                                            <User />
-                                            </AvatarIcon>
-                                        )}
-                                        </div>
-                                    ))}
-                                    {isLoading && (
-                                        <div className="flex items-start gap-3">
-                                        <AvatarIcon>
-                                            <Bot className="text-primary" />
-                                        </AvatarIcon>
-                                        <div className="rounded-lg px-4 py-2 bg-card flex items-center">
-                                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                                        </div>
-                                        </div>
-                                    )}
-                                    </div>
-                                </ScrollArea>
-                                <div className="flex items-center gap-2">
-                                    <Input
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
-                                    placeholder="Type your message..."
-                                    disabled={isLoading}
-                                    />
-                                    <Button onClick={handleSendMessage} disabled={isLoading || !input.trim()}>
-                                    Send
-                                    </Button>
+                            ))}
+                            {isLoading && (
+                                <div className="flex items-start gap-3">
+                                <AvatarIcon>
+                                    <Bot className="text-primary" />
+                                </AvatarIcon>
+                                <div className="rounded-lg px-4 py-2 bg-card flex items-center">
+                                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                                 </div>
-                            </CardContent>
-                        </>
-                    )}
+                                </div>
+                            )}
+                            </div>
+                        </ScrollArea>
+                        {chatStep !== 'chatting' ? renderInitialQuestions() : (
+                            <div className="flex items-center gap-2">
+                                <Input
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
+                                placeholder="Type your message..."
+                                disabled={isLoading}
+                                />
+                                <Button onClick={handleSendMessage} disabled={isLoading || !input.trim()}>
+                                Send
+                                </Button>
+                            </div>
+                        )}
+                    </CardContent>
                 </Card>
              </motion.div>
         )}

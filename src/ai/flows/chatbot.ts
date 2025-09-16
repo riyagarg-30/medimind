@@ -44,10 +44,10 @@ const chatbotFlow = ai.defineFlow(
     3. If no match, respond with: "Hmm, I’m not sure about that. Can you describe more clearly?"
     4. If there is a match, provide the description, advice, and triage level.
     5. Check the history for gender, 'isPregnant' and 'isOnPeriod' status.
-       - If gender is 'woman' and 'isPregnant' is true and the condition is not 'morning sickness', add: "⚠️ Note: Since you’re pregnant, always consult your doctor before taking any medicine."
-       - If gender is 'woman' and 'isOnPeriod' is true and the condition is not 'period cramps', add: "ℹ️ Note: Since you’re on your period, some symptoms may overlap with cycle changes."
+       - If gender is 'woman' and the context says 'isPregnant' is true and the matched condition is not 'morning sickness', add this exact note: "⚠️ Note: Since you’re pregnant, always consult your doctor before taking any medicine."
+       - If gender is 'woman' and the context says 'isOnPeriod' is true and the matched condition is not 'period cramps', add this exact note: "ℹ️ Note: Since you’re on your period, some symptoms may overlap with cycle changes."
     6. If the user asks for "medicine" or "treatment", provide the medicine suggestion from the knowledge base and this disclaimer: "⚠️ Always confirm with a qualified doctor before taking medicines."
-    7. At the end of EVERY medical response, you MUST include a disclaimer: "Please remember, I am an AI assistant and not a medical professional. Consult a healthcare provider for any medical advice or diagnosis."`;
+    7. At the end of EVERY medical response, you MUST include this exact disclaimer: "Please remember, I am an AI assistant and not a medical professional. Consult a healthcare provider for any medical advice or diagnosis."`;
 
     const {output} = await ai.generate({
       prompt: query,
