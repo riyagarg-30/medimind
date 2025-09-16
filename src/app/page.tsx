@@ -9,15 +9,15 @@ import { Logo } from "@/components/icons";
 import Link from "next/link";
 import { motion } from 'framer-motion';
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+    <div className="flex items-center justify-center min-h-screen bg-background p-4 py-8">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="w-full max-w-sm border-0 shadow-2xl shadow-primary/10">
+        <Card className="w-full max-w-md border-0 shadow-2xl shadow-primary/10">
           <CardHeader className="text-center">
             <motion.div
               initial={{ scale: 0 }}
@@ -27,27 +27,43 @@ export default function LoginPage() {
             >
               <Logo className="size-12 text-primary" />
             </motion.div>
-            <CardTitle>Welcome to MediMind</CardTitle>
-            <CardDescription>Your AI Health Companion</CardDescription>
+            <CardTitle>Create Your MediMind Account</CardTitle>
+            <CardDescription>Join us to start your health journey.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" placeholder="John Doe" required />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" placeholder="m@example.com" required />
+                </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
+              <Label htmlFor="address">Address</Label>
+              <Input id="address" placeholder="123 Wellness St, Health City" required />
+            </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input id="age" type="number" placeholder="30" required />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" type="password" required />
+                </div>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Link href="/dashboard" className="w-full">
-              <Button className="w-full">Sign In</Button>
+              <Button className="w-full">Create Account</Button>
             </Link>
             <p className="text-xs text-center text-muted-foreground">
-              Don't have an account?{' '}
+              Already have an account?{' '}
               <a href="#" className="underline">
-                Sign up
+                Sign In
               </a>
             </p>
           </CardFooter>

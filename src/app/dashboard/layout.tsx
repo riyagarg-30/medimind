@@ -19,6 +19,7 @@ import {
   ClipboardList,
   Home,
   Info,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -34,6 +35,7 @@ export default function DashboardLayout({
     { href: "/dashboard", icon: <Home />, label: "Symptom Checker", isActive: pathname === '/dashboard' },
     { href: "/dashboard/chatbot", icon: <Bot />, label: "Chatbot", isActive: pathname === '/dashboard/chatbot' },
     { href: "/dashboard/history", icon: <ClipboardList />, label: "History", isActive: pathname === '/dashboard/history' },
+    { href: "/dashboard/profile", icon: <User />, label: "Profile", isActive: pathname === '/dashboard/profile' },
     { href: "/dashboard/about", icon: <Info />, label: "About", isActive: pathname === '/dashboard/about' },
   ]
 
@@ -84,14 +86,16 @@ export default function DashboardLayout({
             </nav>
 
             <div className="relative ml-auto flex-1 md:grow-0"></div>
-            <Avatar>
-                <AvatarImage
-                src="https://picsum.photos/seed/101/128/128"
-                alt="User avatar"
-                data-ai-hint="female portrait"
-                />
-                <AvatarFallback>U</AvatarFallback>
-            </Avatar>
+            <Link href="/dashboard/profile">
+                <Avatar>
+                    <AvatarImage
+                    src="https://picsum.photos/seed/101/128/128"
+                    alt="User avatar"
+                    data-ai-hint="female portrait"
+                    />
+                    <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+            </Link>
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
       </SidebarInset>
