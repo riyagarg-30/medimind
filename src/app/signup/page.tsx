@@ -10,6 +10,7 @@ import { Logo } from "@/components/icons";
 import Link from "next/link";
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SignupPage() {
     const [name, setName] = useState('');
@@ -18,17 +19,54 @@ export default function SignupPage() {
     const [age, setAge] = useState('');
     const [password, setPassword] = useState('');
     const router = useRouter();
+    const { toast } = useToast();
 
     const handleCreateAccount = () => {
+        if (!name || !email || !password) {
+            toast({
+                title: "Incomplete Form",
+                description: "Please fill out your name, email, and password.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         const userDetails = {
             name,
             email,
             address,
             age,
-            profilePic: 'https://picsum.photos/seed/101/128/128'
+            password, // In a real app, this should be hashed!
+            profilePic: `https://picsum.photos/seed/${Math.random()}/128/128`
         };
-        localStorage.setItem('userDetails', JSON.stringify(userDetails));
-        router.push('/dashboard');
+
+        try {
+            // Check if user already exists
+            if (localStorage.getItem('userDetails')) {
+                const existingDetails = JSON.parse(localStorage.getItem('userDetails')!);
+                if (existingDetails.email === email) {
+                    toast({
+                        title: "Account Exists",
+                        description: "An account with this email already exists. Please log in.",
+                        variant: "destructive",
+                    });
+                    return;
+                }
+            }
+            
+            localStorage.setItem('userDetails', JSON.stringify(userDetails));
+            toast({
+                title: "Account Created!",
+                description: "You can now log in with your new account.",
+            });
+            router.push('/login');
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Could not create account. Please try again.",
+                variant: "destructive",
+            });
+        }
     };
 
   return (

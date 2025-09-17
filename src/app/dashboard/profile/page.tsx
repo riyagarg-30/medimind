@@ -21,16 +21,25 @@ export default function ProfilePage() {
 
     useEffect(() => {
         setIsClient(true);
-        const savedDetails = localStorage.getItem('userDetails');
-        if (savedDetails) {
-            const userDetails = JSON.parse(savedDetails);
-            setName(userDetails.name || '');
-            setEmail(userDetails.email || '');
-            setAge(userDetails.age || '');
-            setAddress(userDetails.address || '');
-            setProfilePic(userDetails.profilePic || 'https://picsum.photos/seed/101/128/128');
+        try {
+            const savedDetails = localStorage.getItem('userDetails');
+            if (savedDetails) {
+                const userDetails = JSON.parse(savedDetails);
+                setName(userDetails.name || '');
+                setEmail(userDetails.email || '');
+                setAge(userDetails.age || '');
+                setAddress(userDetails.address || '');
+                setProfilePic(userDetails.profilePic || `https://picsum.photos/seed/${Math.random()}/128/128`);
+            }
+        } catch (error) {
+            console.error("Failed to load user details from local storage", error);
+            toast({
+                title: "Error",
+                description: "Could not load your profile data.",
+                variant: "destructive"
+            });
         }
-    }, []);
+    }, [toast]);
 
     const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -43,18 +52,31 @@ export default function ProfilePage() {
     };
 
     const handleSaveChanges = () => {
-        const userDetails = {
-            name,
-            email,
-            age,
-            address,
-            profilePic,
-        };
-        localStorage.setItem('userDetails', JSON.stringify(userDetails));
-        toast({
-            title: "Profile Updated",
-            description: "Your information has been successfully saved.",
-        });
+        try {
+            const currentDetails = localStorage.getItem('userDetails');
+            const parsedDetails = currentDetails ? JSON.parse(currentDetails) : {};
+
+            const userDetails = {
+                ...parsedDetails,
+                name,
+                email,
+                age,
+                address,
+                profilePic,
+            };
+            localStorage.setItem('userDetails', JSON.stringify(userDetails));
+            toast({
+                title: "Profile Updated",
+                description: "Your information has been successfully saved.",
+            });
+        } catch (error) {
+            console.error("Failed to save user details to local storage", error);
+            toast({
+                title: "Error",
+                description: "Could not save your profile data.",
+                variant: "destructive"
+            });
+        }
     };
 
     return (
@@ -70,7 +92,7 @@ export default function ProfilePage() {
                     <div className="flex flex-col items-center space-y-4">
                         <div className="relative">
                             <Avatar className="h-32 w-32 border-4 border-primary/20">
-                                <AvatarImage src={profilePic} alt="Profile picture" data-ai-hint="female portrait" />
+                                {isClient && <AvatarImage src={profilePic} alt="Profile picture" data-ai-hint="female portrait" />}
                                 <AvatarFallback>
                                     {name?.charAt(0).toUpperCase() || 'U'}
                                 </AvatarFallback>

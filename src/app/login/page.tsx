@@ -19,28 +19,35 @@ export default function LoginPage() {
     const { toast } = useToast();
 
     const handleLogin = () => {
-        const savedDetails = localStorage.getItem('userDetails');
-        if (savedDetails) {
-            const userDetails = JSON.parse(savedDetails);
-            // In a real app, you'd also check the password.
-            // Here, we just check if the email matches.
-            if (userDetails.email === email) {
-                toast({
-                    title: "Login Successful",
-                    description: "Welcome back!",
-                });
-                router.push('/dashboard');
+        try {
+            const savedDetails = localStorage.getItem('userDetails');
+            if (savedDetails) {
+                const userDetails = JSON.parse(savedDetails);
+                // In a real app, you'd also check the hashed password.
+                if (userDetails.email === email && userDetails.password === password) {
+                    toast({
+                        title: "Login Successful",
+                        description: "Welcome back!",
+                    });
+                    router.push('/dashboard');
+                } else {
+                     toast({
+                        title: "Login Failed",
+                        description: "Invalid email or password.",
+                        variant: "destructive",
+                    });
+                }
             } else {
-                 toast({
+                toast({
                     title: "Login Failed",
-                    description: "No account found with that email. Please sign up.",
+                    description: "No account found. Please sign up to create an account.",
                     variant: "destructive",
                 });
             }
-        } else {
+        } catch (error) {
             toast({
-                title: "Login Failed",
-                description: "No users found. Please sign up to create an account.",
+                title: "Error",
+                description: "An error occurred during login. Please try again.",
                 variant: "destructive",
             });
         }
