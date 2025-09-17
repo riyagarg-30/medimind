@@ -75,7 +75,7 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     try {
       const {output} = await ai.generate({
         model: 'googleai/gemini-1.5-pro',
-        prompt: await prompt.render(input),
+        prompt: await prompt.render({data: input}),
         output: {
           format: 'json',
           schema: GenerateDetailedDiagnosesOutputSchema,
