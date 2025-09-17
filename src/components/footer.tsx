@@ -3,6 +3,7 @@ import { Linkedin, Facebook, Twitter, Mail, Phone, Book, Shield, FileText } from
 import Link from 'next/link';
 import { Logo } from './icons';
 import { PrivacyPolicyDialog } from './privacy-policy-dialog';
+import { TermsOfServiceDialog } from './terms-of-service-dialog';
 
 export function Footer() {
   return (
@@ -49,10 +50,7 @@ export function Footer() {
                     <PrivacyPolicyDialog />
                 </li>
                 <li>
-                    <Link href="#" className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground hover:text-primary">
-                        <FileText className="h-4 w-4"/>
-                        Terms of Service
-                    </Link>
+                    <TermsOfServiceDialog />
                 </li>
              </ul>
           </div>
