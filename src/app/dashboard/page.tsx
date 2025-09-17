@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
 import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
-import { Loader2, AlertTriangle, Activity, Upload, X, FileText, Image as ImageIcon } from 'lucide-react';
+import { Loader2, AlertTriangle, Activity, X, ImageIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,15 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import Image from 'next/image';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+type HistoryItem = {
+    id: number;
+    date: string;
+    inputType: "Symptoms" | "Report";
+    input: string;
+    result: string;
+};
 
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
@@ -53,13 +62,33 @@ export default function DashboardPage() {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && (file.type.startsWith('image/') || file.type === 'application/pdf')) {
        const reader = new FileReader();
       reader.onload = (e) => {
         setReportDataUri(e.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
+  };
+  
+  const saveToHistory = (result: GenerateDetailedDiagnosesOutput) => {
+      const inputSummary = reportDataUri ? `Report + ${symptoms}` : symptoms;
+      const newItem: HistoryItem = {
+        id: Date.now(),
+        date: new Date().toISOString(),
+        inputType: reportDataUri ? 'Report' : 'Symptoms',
+        input: inputSummary || "No input provided",
+        result: result.summaryReport || "No summary available.",
+      };
+
+      try {
+        const savedHistory = localStorage.getItem('symptomHistory');
+        const history: HistoryItem[] = savedHistory ? JSON.parse(savedHistory) : [];
+        const updatedHistory = [newItem, ...history];
+        localStorage.setItem('symptomHistory', JSON.stringify(updatedHistory));
+      } catch (error) {
+          console.error("Failed to save to history:", error);
+      }
   };
 
   const handleSubmit = async () => {
@@ -79,6 +108,7 @@ export default function DashboardPage() {
         ...(reportDataUri && { reportDataUri }),
        });
       setAnalysis(result);
+      saveToHistory(result);
 
     } catch (err: any) {
       console.error("Analysis failed:", err);
@@ -142,11 +172,17 @@ export default function DashboardPage() {
                     ref={fileInputRef}
                     onChange={handleFileChange}
                     className="hidden"
-                    accept="image/png, image/jpeg, image/webp"
+                    accept="image/png, image/jpeg, image/webp, application/pdf"
                   />
                 {reportDataUri ? (
                   <div className="relative group">
-                    <Image src={reportDataUri} alt="Report preview" width={128} height={128} className="rounded-md object-cover h-32 w-32" />
+                    {reportDataUri.startsWith('data:image') ? (
+                        <Image src={reportDataUri} alt="Report preview" width={128} height={128} className="rounded-md object-cover h-32 w-32" />
+                    ): (
+                        <div className="text-center text-muted-foreground p-4">
+                            <p>PDF report uploaded</p>
+                        </div>
+                    )}
                     <Button
                       variant="destructive"
                       size="icon"
@@ -154,6 +190,9 @@ export default function DashboardPage() {
                       onClick={(e) => {
                         e.stopPropagation();
                         setReportDataUri(null);
+                        if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                        }
                       }}
                     >
                       <X className="h-4 w-4" />
@@ -165,7 +204,7 @@ export default function DashboardPage() {
                     <p className="mt-2 text-sm">
                       <span className="font-semibold text-primary">Click to upload</span> or drag and drop
                     </p>
-                    <p className="text-xs">PNG, JPG or WEBP</p>
+                    <p className="text-xs">PNG, JPG, WEBP, or PDF</p>
                   </div>
                 )}
               </div>
@@ -242,17 +281,21 @@ export default function DashboardPage() {
               <CardContent className="space-y-4">
                   <div>
                     <Label>Overall Risk Score</Label>
-                    <Progress value={analysis.riskScore} className="h-3" />
-                    <p className="text-sm font-bold text-right">{analysis.riskScore}%</p>
+                    <div className="flex items-center gap-2">
+                      <Progress value={analysis.riskScore} className="h-3 w-full" />
+                      <span className="text-sm font-bold">{analysis.riskScore}%</span>
+                    </div>
                   </div>
                   <div>
                     <Label>Data Quality Score</Label>
-                    <Progress value={analysis.dataQuality?.score} className="h-3" />
-                     <p className="text-sm font-bold text-right">{analysis.dataQuality?.score}%</p>
+                     <div className="flex items-center gap-2">
+                        <Progress value={analysis.dataQuality?.score} className="h-3 w-full" />
+                        <span className="text-sm font-bold">{analysis.dataQuality?.score}%</span>
+                    </div>
                   </div>
                   {analysis.dataQuality?.suggestions?.length > 0 && (
                      <Alert variant="default" className="mt-2">
-                        <AlertTitle>Quality Suggestions</AlertTitle>
+                        <AlertTitle className="text-sm">Quality Suggestions</AlertTitle>
                         <AlertDescription>
                           <ul className="list-disc pl-4 text-xs">
                            {analysis.dataQuality.suggestions.map((s,i) => <li key={i}>{s}</li>)}
@@ -285,28 +328,62 @@ export default function DashboardPage() {
           {analysis.biomarkerAnalysis && analysis.biomarkerAnalysis.length > 0 && (
             <div>
               <h3 className="text-xl font-semibold mb-4">Key Biomarkers from Report</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {analysis.biomarkerAnalysis.map((biomarker, index) => (
-                  <Card key={index}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <FileText className="text-primary"/>
-                        {biomarker.name}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex justify-between items-baseline">
-                        <span className="text-2xl font-bold">{biomarker.value}</span>
-                        <span className="text-muted-foreground">{biomarker.unit}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Normal Range: {biomarker.normalRange}
-                      </div>
-                      <p className="text-sm pt-2">{biomarker.explanation}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                <div className="space-y-4">
+                    {analysis.biomarkerAnalysis.map((biomarker, index) => {
+                        const [valStr, normalStr] = [biomarker.value, biomarker.normalRange];
+                        const val = parseFloat(valStr);
+                        const [min, max] = normalStr.split('-').map(parseFloat);
+                        const isNormal = val >= min && val <= max;
+
+                        const data = [{
+                            name: biomarker.name,
+                            value: val,
+                            normalMin: min,
+                            normalMax: max
+                        }];
+
+                        return (
+                            <Card key={index} className="overflow-hidden">
+                                <CardHeader>
+                                    <CardTitle className="text-lg">{biomarker.name}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                                    <div className="md:col-span-1 space-y-1">
+                                        <p className="text-xs text-muted-foreground">Your Value</p>
+                                        <p className={`text-3xl font-bold ${!isNormal ? 'text-destructive' : ''}`}>{biomarker.value} <span className="text-lg font-normal text-muted-foreground">{biomarker.unit}</span></p>
+                                        <p className="text-xs text-muted-foreground">Normal Range: {biomarker.normalRange} {biomarker.unit}</p>
+                                    </div>
+                                    <div className="md:col-span-2 h-24">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                                <XAxis type="number" domain={[min * 0.8, max * 1.2]} hide />
+                                                <YAxis type="category" dataKey="name" hide />
+                                                <Tooltip
+                                                    cursor={{ fill: 'transparent' }}
+                                                    content={({ active, payload }) => {
+                                                        if (active && payload && payload.length) {
+                                                            return (
+                                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                                                    <p className="text-sm">{`${payload[0].value} ${biomarker.unit}`}</p>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    }}
+                                                />
+                                                <Bar dataKey="normalMax" stackId="a" fill="hsl(var(--secondary))" radius={[5, 5, 5, 5]} barSize={15} background={{ fill: '#eee', radius: 5 }} />
+                                                <Bar dataKey="value" stackId="b" fill={isNormal ? 'hsl(var(--primary))' : 'hsl(var(--destructive))'} barSize={15} radius={[5, 5, 5, 5]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="md:col-span-3">
+                                         <p className="text-sm pt-2 text-muted-foreground">{biomarker.explanation}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
+                </div>
             </div>
           )}
 
@@ -364,5 +441,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

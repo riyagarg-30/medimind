@@ -15,6 +15,14 @@ type Message = {
     parts: Part[];
 };
 
+type HistoryItem = {
+    id: number;
+    date: string;
+    inputType: "Symptoms" | "Report";
+    input: string;
+    result: string;
+};
+
 export default function ChatbotPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -31,21 +39,44 @@ export default function ChatbotPage() {
         }
     }, [messages]);
 
+    const saveToHistory = (query: string, response: string) => {
+        const newItem: HistoryItem = {
+            id: Date.now(),
+            date: new Date().toISOString().split('T')[0],
+            inputType: 'Symptoms',
+            input: query,
+            result: response.split('\n\n')[0], // Save a summary
+        };
+
+        try {
+            const savedHistory = localStorage.getItem('symptomHistory');
+            const history: HistoryItem[] = savedHistory ? JSON.parse(savedHistory) : [];
+            // Add new item to the beginning of the array
+            const updatedHistory = [newItem, ...history];
+            localStorage.setItem('symptomHistory', JSON.stringify(updatedHistory));
+        } catch (error) {
+            console.error("Failed to save to history:", error);
+        }
+    };
+
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
 
-        const newMessages: Message[] = [...messages, { role: 'user', parts: [{ text: input }] }];
+        const userMessage = input;
+        const newMessages: Message[] = [...messages, { role: 'user', parts: [{ text: userMessage }] }];
         setMessages(newMessages);
         setInput('');
         setIsLoading(true);
 
         try {
             const response = await askChatbot({
-                query: input,
+                query: userMessage,
                 history: messages
             });
             setMessages([...newMessages, { role: 'model', parts: [{ text: response }] }]);
+            saveToHistory(userMessage, response);
         } catch (error) {
             console.error("Error asking chatbot:", error);
             setMessages([...newMessages, { role: 'model', parts: [{ text: "Sorry, I'm having trouble connecting. Please try again later." }] }]);
