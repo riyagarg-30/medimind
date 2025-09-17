@@ -8,7 +8,7 @@ import { Bot, User, Loader2, WifiOff } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { askChatbot } from '@/ai/flows/chatbot';
-import { Part } from 'genkit/cohere';
+import type { Part } from '@genkit-ai/googleai';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { askOfflineChatbot } from '@/ai/flows/offline-chatbot';
 
