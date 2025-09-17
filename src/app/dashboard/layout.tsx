@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -36,6 +35,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const navItems = [
     { href: "/dashboard", icon: <Home />, label: "Symptom Checker" },
+    { href: "/dashboard/chatbot", icon: <Bot />, label: "Chatbot" },
     { href: "/dashboard/history", icon: <ClipboardList />, label: "History" },
     { href: "/dashboard/profile", icon: <User />, label: "Profile" },
     { href: "/dashboard/about", icon: <Info />, label: "About" },

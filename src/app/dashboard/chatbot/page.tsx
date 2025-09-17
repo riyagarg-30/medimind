@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -286,7 +285,7 @@ export default function ChatbotPage() {
         <div className="flex flex-col h-[calc(100vh-5rem)] p-4 md:p-8">
             <Card className="flex-1 flex flex-col">
                 <CardHeader>
-                    <CardTitle>Medical Q&A Chatbot</CardTitle>
+                    <CardTitle>Medical Q&amp;A Chatbot</CardTitle>
                     <CardDescription>Select options to get information. This is not a diagnosis.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
