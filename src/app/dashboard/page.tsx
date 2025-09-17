@@ -36,6 +36,7 @@ type CurrentUser = {
   address: string;
   role: 'user' | 'clinician';
   profilePic: string;
+  lastCondition?: string;
 }
 
 export default function DashboardPage() {
@@ -95,30 +96,47 @@ export default function DashboardPage() {
       reader.readAsDataURL(file);
     }
   };
-  
-  const saveToHistory = (result: GenerateDetailedDiagnosesOutput) => {
-      const inputSummary = reportDataUri ? `Report + ${symptoms}` : symptoms;
-      const newItem: HistoryItem = {
-        id: Date.now(),
-        date: new Date().toISOString(),
-        inputType: reportDataUri ? 'Report' : 'Symptoms',
-        input: inputSummary || "No input provided",
-        result: result.summaryReport || "No summary available.",
-      };
 
-      try {
-        const userStr = localStorage.getItem('currentUser');
-        if (!userStr) return;
-        const currentUser = JSON.parse(userStr);
+  const saveToHistoryAndRecordCondition = (result: GenerateDetailedDiagnosesOutput) => {
+    if (!currentUser) return;
+    
+    // Save to general history
+    const inputSummary = reportDataUri ? `Report + ${symptoms}` : symptoms;
+    const newItem: HistoryItem = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      inputType: reportDataUri ? 'Report' : 'Symptoms',
+      input: inputSummary || "No input provided",
+      result: result.summaryReport || "No summary available.",
+    };
+
+    try {
         const historyKey = `symptomHistory_${currentUser.id}`;
-        
         const savedHistory = localStorage.getItem(historyKey);
         const history: HistoryItem[] = savedHistory ? JSON.parse(savedHistory) : [];
         const updatedHistory = [newItem, ...history];
         localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
-      } catch (error) {
-          console.error("Failed to save to history:", error);
-      }
+    } catch (error) {
+        console.error("Failed to save to history:", error);
+    }
+
+    // Save the last condition to the user's record
+    const topCondition = result.conditions?.[0]?.name;
+    if (topCondition) {
+        try {
+            const allUsersString = localStorage.getItem('users');
+            if (allUsersString) {
+                let allUsers: CurrentUser[] = JSON.parse(allUsersString);
+                const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+                if (userIndex > -1) {
+                    allUsers[userIndex].lastCondition = topCondition;
+                    localStorage.setItem('users', JSON.stringify(allUsers));
+                }
+            }
+        } catch (error) {
+            console.error("Failed to save last condition:", error);
+        }
+    }
   };
 
   const handleSubmit = async () => {
@@ -138,7 +156,7 @@ export default function DashboardPage() {
         ...(reportDataUri && { reportDataUri }),
        });
       setAnalysis(result);
-      saveToHistory(result);
+      saveToHistoryAndRecordCondition(result);
 
     } catch (err: any) {
       console.error("Analysis failed:", err);

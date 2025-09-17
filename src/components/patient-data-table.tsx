@@ -20,6 +20,7 @@ type User = {
     address: string;
     role: 'user' | 'clinician';
     profilePic: string;
+    lastCondition?: string;
 }
 
 interface PatientDataTableProps {
@@ -36,6 +37,7 @@ export function PatientDataTable({ patients }: PatientDataTableProps) {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead className="text-center">Age</TableHead>
+                    <TableHead>Last Condition</TableHead>
                     <TableHead>Status</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -52,12 +54,19 @@ export function PatientDataTable({ patients }: PatientDataTableProps) {
                             <TableCell>{patient.email}</TableCell>
                             <TableCell className="text-center">{patient.age || 'N/A'}</TableCell>
                             <TableCell>
+                                {patient.lastCondition ? (
+                                    <Badge variant="destructive">{patient.lastCondition}</Badge>
+                                ) : (
+                                    <span className="text-muted-foreground text-xs">No analysis run</span>
+                                )}
+                            </TableCell>
+                            <TableCell>
                                 <Badge variant="secondary">Active</Badge>
                             </TableCell>
                         </TableRow>
                     )) : (
                          <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                                 No patients found.
                             </TableCell>
                         </TableRow>
