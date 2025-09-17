@@ -1,5 +1,5 @@
 
-import { Linkedin, Facebook, Twitter, Mail } from 'lucide-react';
+import { Linkedin, Facebook, Twitter, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from './icons';
 
@@ -28,6 +28,10 @@ export function Footer() {
                     </a>
                 </div>
                 <p className="text-xs text-muted-foreground/80">(Official Contact Mail)</p>
+                <div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground pt-2">
+                    <Phone className="h-4 w-4"/>
+                    <span>+91 78145 68422</span>
+                </div>
             </div>
           </div>
 
