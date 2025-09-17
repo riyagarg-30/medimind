@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { askChatbot } from '@/ai/flows/chatbot';
 import { Part } from 'genkit/cohere';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { askOfflineChatbot } from '@/ai/flows/offline-chatbot';
 
 type Message = {
     role: 'user' | 'model';
@@ -23,15 +24,6 @@ type HistoryItem = {
     input: string;
     result: string;
 };
-
-const OFFLINE_RESPONSE = `It looks like you're currently offline. While I can't access my AI diagnostic tools right now, here is some general advice:
-
-- **For minor symptoms:** Ensure you get adequate rest and stay hydrated.
-- **For injuries:** For minor cuts, clean the area and apply a bandage. For sprains, remember R.I.C.E (Rest, Ice, Compression, Elevation).
-- **When to seek help:** If you are experiencing severe symptoms like chest pain, difficulty breathing, severe headache, or a high fever, please seek immediate medical attention from a professional.
-
-Please reconnect to the internet for a full analysis.`;
-
 
 export default function ChatbotPage() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -107,12 +99,14 @@ export default function ChatbotPage() {
         setMessages(newMessages);
         setInput('');
         
+        setIsLoading(true);
+
         if (isOffline) {
-            setMessages([...newMessages, { role: 'model', parts: [{ text: OFFLINE_RESPONSE }] }]);
+            const offlineResponse = await askOfflineChatbot(userMessage);
+            setMessages([...newMessages, { role: 'model', parts: [{ text: offlineResponse }] }]);
+            setIsLoading(false);
             return;
         }
-
-        setIsLoading(true);
 
         try {
             const response = await askChatbot({
@@ -144,7 +138,7 @@ export default function ChatbotPage() {
                             <WifiOff className="h-4 w-4" />
                             <AlertTitle>You are currently offline</AlertTitle>
                             <AlertDescription>
-                                AI diagnostics are disabled. You can interact with the offline assistant.
+                                AI diagnostics are disabled. You are interacting with the offline assistant.
                             </AlertDescription>
                         </Alert>
                     )}
@@ -193,9 +187,9 @@ export default function ChatbotPage() {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Type your symptoms here..."
                             className="flex-1"
-                            disabled={isLoading && !isOffline}
+                            disabled={isLoading}
                         />
-                        <Button type="submit" disabled={(isLoading && !isOffline) || !input.trim()}>
+                        <Button type="submit" disabled={isLoading || !input.trim()}>
                             Send
                         </Button>
                     </form>
