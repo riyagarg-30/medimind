@@ -35,6 +35,8 @@ type CurrentUser = {
   profilePic: string;
 }
 
+const isClient = typeof window !== 'undefined';
+
 export default function DashboardLayout({
   children,
 }: {
@@ -42,17 +44,17 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
-  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-    try {
-      const userStr = localStorage.getItem('currentUser');
-      if (userStr) {
-        setCurrentUser(JSON.parse(userStr));
+    if (isClient) {
+      try {
+        const userStr = localStorage.getItem('currentUser');
+        if (userStr) {
+          setCurrentUser(JSON.parse(userStr));
+        }
+      } catch (error) {
+        console.error("Failed to load current user from local storage", error);
       }
-    } catch (error) {
-      console.error("Failed to load current user from local storage", error);
     }
   }, []);
 
