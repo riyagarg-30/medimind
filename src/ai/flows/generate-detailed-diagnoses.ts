@@ -44,7 +44,7 @@ const prompt = ai.definePrompt({
   3.  **Key Biomarker Analysis**:
       -   Extract key biomarkers (e.g., Hemoglobin, Glucose, Blood Pressure) from the report.
       -   For each biomarker, provide: name, value, unit, normalRange, and an explanation.
-      -   If no biomarkers are found, return an empty array.
+      -   If no biomarkers are found, return an empty array. This is a critical field, do your best to extract it.
 
   4.  **Ranked Diagnostic Analysis**:
       -   Provide a list of 2-3 possible conditions based on the report, ranked from most to least likely.
@@ -84,4 +84,3 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     }
   }
 );
-
