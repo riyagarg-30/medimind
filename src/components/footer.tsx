@@ -38,7 +38,7 @@ export function Footer() {
           <div>
              <h3 className="text-lg font-semibold mb-4">Follow Us</h3>
              <div className="flex justify-center md:justify-start space-x-4">
-                <Link href="#" className="text-muted-foreground hover:text-primary">
+                <Link href="https://www.linkedin.com/in/riya-garg-98a09a334?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
                     <Linkedin className="h-6 w-6" />
                 </Link>
                 <Link href="#" className="text-muted-foreground hover:text-primary">
