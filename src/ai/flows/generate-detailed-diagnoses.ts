@@ -92,4 +92,3 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     }
   }
 );
-
