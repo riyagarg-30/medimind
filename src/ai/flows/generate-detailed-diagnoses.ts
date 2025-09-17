@@ -86,7 +86,7 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     }
     
     try {
-        const {output} = await prompt(input);
+        const {output} = await prompt(input, { model: 'googleai/gemini-1.5-pro' });
 
         if (!output) {
             throw new Error("The AI model could not generate a valid analysis for the provided input.");
@@ -99,5 +99,3 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     }
   }
 );
-
-    
