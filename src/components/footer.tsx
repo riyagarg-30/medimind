@@ -2,6 +2,7 @@
 import { Linkedin, Facebook, Twitter, Mail, Phone, Book, Shield, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from './icons';
+import { PrivacyPolicyDialog } from './privacy-policy-dialog';
 
 export function Footer() {
   return (
@@ -45,10 +46,7 @@ export function Footer() {
                     </Link>
                 </li>
                 <li>
-                    <Link href="#" className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground hover:text-primary">
-                        <Shield className="h-4 w-4"/>
-                        Privacy Policy
-                    </Link>
+                    <PrivacyPolicyDialog />
                 </li>
                 <li>
                     <Link href="#" className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground hover:text-primary">
