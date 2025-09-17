@@ -42,7 +42,7 @@ export default function DashboardLayout({
   ]
 
   const handleLogoClick = () => {
-    window.location.href = '/dashboard';
+    window.location.href = '/';
   }
 
   return (
