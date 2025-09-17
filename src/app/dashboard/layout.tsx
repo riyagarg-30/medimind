@@ -42,7 +42,7 @@ export default function DashboardLayout({
   ]
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-3 p-2">
