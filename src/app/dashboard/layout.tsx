@@ -41,12 +41,18 @@ export default function DashboardLayout({
     { href: "/dashboard/about", icon: <Info />, label: "About" },
   ]
 
+  const handleLogoClick = () => {
+    window.location.href = '/dashboard';
+  }
+
   return (
     <SidebarProvider defaultOpen={false}>
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-3 p-2">
-            <Logo className="size-8 text-primary" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogoClick} aria-label="Reload App">
+              <Logo className="size-8 text-primary" />
+            </Button>
             <h1 className="text-xl font-semibold">MediMind</h1>
           </div>
         </SidebarHeader>
@@ -74,8 +80,10 @@ export default function DashboardLayout({
             <div className="flex items-center gap-4">
                 <SidebarTrigger/>
                 <div className="hidden md:flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogoClick} aria-label="Reload App">
                     <Logo className="size-8 text-primary" />
-                    <h1 className="text-xl font-semibold">MediMind</h1>
+                  </Button>
+                  <h1 className="text-xl font-semibold">MediMind</h1>
                 </div>
             </div>
             
