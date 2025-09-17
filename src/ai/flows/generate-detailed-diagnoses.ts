@@ -73,7 +73,15 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const {output} = await prompt(input);
+      const {output} = await ai.generate({
+        model: 'googleai/gemini-1.5-pro',
+        prompt: await prompt.render(input),
+        output: {
+          format: 'json',
+          schema: GenerateDetailedDiagnosesOutputSchema,
+        },
+      });
+
       if (!output) {
         throw new Error("The AI model returned an empty response. Please try again.");
       }
@@ -84,3 +92,4 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     }
   }
 );
+
