@@ -6,10 +6,27 @@
  * - askOfflineChatbot - A function that returns a pre-defined response based on keywords.
  */
 
+type HistoryItem = {
+    id: number;
+    date: string;
+    inputType: "Symptoms" | "Report";
+    input: string;
+    result: string;
+};
+
+
 // This is a very simple keyword-based offline "chatbot".
 // It provides basic, safe advice for common ailments when the AI is not available.
-export async function askOfflineChatbot(query: string): Promise<string> {
+export async function askOfflineChatbot(query: string, history?: HistoryItem[]): Promise<string> {
     const lowerQuery = query.toLowerCase();
+
+    if (lowerQuery.includes('history') || lowerQuery.includes('past')) {
+        if (history && history.length > 0) {
+            const lastItem = history[0];
+            return `Looking at your history, your last analysis was on ${new Date(lastItem.date).toLocaleDateString()} for "${lastItem.input}". The result was: "${lastItem.result}".\n\nI am an offline assistant with limited capabilities. For a full analysis, please reconnect to the internet.`
+        }
+        return "I don't have access to your past history right now. Please reconnect to the internet to view your full analysis history.";
+    }
 
     if (lowerQuery.includes('headache')) {
         return "Offline advice for a headache:\n\n- Rest in a quiet, dark room.\n- Drink plenty of water.\n- A cool cloth on your forehead may help.\n\nIf the headache is severe, sudden, or accompanied by other symptoms like a stiff neck or confusion, please seek medical attention.";
@@ -31,5 +48,13 @@ export async function askOfflineChatbot(query: string): Promise<string> {
         return "Hello! I'm your offline assistant. I can provide some basic first-aid advice. How can I help? (e.g., 'I have a headache')";
     }
 
-    return `It looks like you're currently offline. I am an offline assistant with limited capabilities.\n\nI can provide basic advice for general symptoms like "headache," "fever," "cut," or "sprain."\n\nFor a full analysis, please reconnect to the internet. If you are experiencing severe symptoms like chest pain, difficulty breathing, or a severe headache, please seek immediate medical attention.`;
+    let initialMessage = `It looks like you're currently offline. I am an offline assistant with limited capabilities.\n\nI can provide basic advice for general symptoms like "headache," "fever," "cut," or "sprain."`;
+    
+    if (history && history.length > 0) {
+        initialMessage += ` I can see you have past analyses. You can ask me about your 'history'.`;
+    }
+    
+    initialMessage += `\n\nFor a full analysis, please reconnect to the internet. If you are experiencing severe symptoms like chest pain, difficulty breathing, or a severe headache, please seek immediate medical attention.`;
+
+    return initialMessage;
 }

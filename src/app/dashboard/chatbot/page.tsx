@@ -30,6 +30,7 @@ export default function ChatbotPage() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isOffline, setIsOffline] = useState(false);
+    const [history, setHistory] = useState<HistoryItem[]>([]);
 
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +40,21 @@ export default function ChatbotPage() {
             const online = navigator.onLine;
             setIsOffline(!online);
         };
+        
+        // Load history from local storage
+        try {
+            const userStr = localStorage.getItem('currentUser');
+            if (userStr) {
+                const currentUser = JSON.parse(userStr);
+                const historyKey = `symptomHistory_${currentUser.id}`;
+                const savedHistory = localStorage.getItem(historyKey);
+                if (savedHistory) {
+                    setHistory(JSON.parse(savedHistory));
+                }
+            }
+        } catch (error) {
+             console.error("Could not load history from local storage:", error);
+        }
 
         // Add event listeners for online/offline events
         window.addEventListener('online', updateOnlineStatus);
@@ -80,10 +96,11 @@ export default function ChatbotPage() {
             const historyKey = `symptomHistory_${currentUser.id}`;
 
             const savedHistory = localStorage.getItem(historyKey);
-            const history: HistoryItem[] = savedHistory ? JSON.parse(savedHistory) : [];
+            const currentHistory: HistoryItem[] = savedHistory ? JSON.parse(savedHistory) : [];
             // Add new item to the beginning of the array
-            const updatedHistory = [newItem, ...history];
+            const updatedHistory = [newItem, ...currentHistory];
             localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
+            setHistory(updatedHistory); // Update state
         } catch (error) {
             console.error("Failed to save to history:", error);
         }
@@ -102,7 +119,7 @@ export default function ChatbotPage() {
         setIsLoading(true);
 
         if (isOffline) {
-            const offlineResponse = await askOfflineChatbot(userMessage);
+            const offlineResponse = await askOfflineChatbot(userMessage, history);
             setMessages([...newMessages, { role: 'model', parts: [{ text: offlineResponse }] }]);
             setIsLoading(false);
             return;
@@ -138,7 +155,7 @@ export default function ChatbotPage() {
                             <WifiOff className="h-4 w-4" />
                             <AlertTitle>You are currently offline</AlertTitle>
                             <AlertDescription>
-                                AI diagnostics are disabled. You are interacting with the offline assistant.
+                                AI diagnostics are disabled. You are interacting with the offline assistant, which has access to your past analysis history.
                             </AlertDescription>
                         </Alert>
                     )}
