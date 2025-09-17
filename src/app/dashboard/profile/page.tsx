@@ -19,12 +19,16 @@ type User = {
     address: string;
     role: 'user' | 'clinician';
     profilePic: string;
-    password?: string; // This is the hashed password.
+    password?: string; // This is the hashed password, used for storage.
 }
+
+// The state for the profile page should not include the password.
+type ProfileUserState = Omit<User, 'password'>;
+
 
 export default function ProfilePage() {
     const { toast } = useToast();
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [currentUser, setCurrentUser] = useState<ProfileUserState | null>(null);
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -32,7 +36,9 @@ export default function ProfilePage() {
         try {
             const savedDetails = localStorage.getItem('currentUser');
             if (savedDetails) {
-                setCurrentUser(JSON.parse(savedDetails));
+                // The password should not be part of the state for the profile page
+                const { password, ...userWithoutPassword } = JSON.parse(savedDetails);
+                setCurrentUser(userWithoutPassword);
             } else {
                 console.error("No current user found in local storage.");
             }
@@ -57,7 +63,7 @@ export default function ProfilePage() {
         }
     };
 
-    const handleFieldChange = (field: keyof User, value: string | number) => {
+    const handleFieldChange = (field: keyof ProfileUserState, value: string | number) => {
         if (currentUser) {
             setCurrentUser({ ...currentUser, [field]: value });
         }
@@ -67,7 +73,6 @@ export default function ProfilePage() {
         if (!currentUser) return;
 
         try {
-            // Get the main users array from localStorage
             const allUsersString = localStorage.getItem('users');
             if (!allUsersString) {
                 toast({ title: "Error", description: "User database not found.", variant: "destructive" });
@@ -78,10 +83,13 @@ export default function ProfilePage() {
             const userIndex = allUsers.findIndex((u: User) => u.id === currentUser.id);
 
             if (userIndex > -1) {
-                // IMPORTANT: Preserve the password from the stored user data
-                const updatedUser = {
+                // Get the stored user to preserve the password
+                const storedUser = allUsers[userIndex];
+                
+                // Create the updated user object, combining form state with the stored password
+                const updatedUser: User = {
                     ...currentUser,
-                    password: allUsers[userIndex].password 
+                    password: storedUser.password 
                 };
 
                 // Update the user's details in the main users array
@@ -89,6 +97,7 @@ export default function ProfilePage() {
                 localStorage.setItem('users', JSON.stringify(allUsers));
                 
                 // Also update the currentUser in localStorage to reflect changes immediately
+                // This ensures the current session has the latest data.
                 localStorage.setItem('currentUser', JSON.stringify(updatedUser));
 
                 toast({
