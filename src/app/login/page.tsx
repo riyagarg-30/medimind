@@ -20,14 +20,16 @@ export default function LoginPage() {
 
     const handleLogin = () => {
         try {
-            const savedDetails = localStorage.getItem('userDetails');
-            if (savedDetails) {
-                const userDetails = JSON.parse(savedDetails);
-                // In a real app, you'd also check the hashed password.
-                if (userDetails.email === email && userDetails.password === password) {
+            const savedUsers = localStorage.getItem('users');
+            if (savedUsers) {
+                const users = JSON.parse(savedUsers);
+                const user = users.find((u: any) => u.email === email);
+
+                if (user && user.password === password) { // In a real app, compare hashed passwords
+                    localStorage.setItem('currentUser', JSON.stringify(user));
                     toast({
                         title: "Login Successful",
-                        description: "Welcome back!",
+                        description: `Welcome back, ${user.name}!`,
                     });
                     router.push('/dashboard');
                 } else {
@@ -40,11 +42,12 @@ export default function LoginPage() {
             } else {
                 toast({
                     title: "Login Failed",
-                    description: "No account found. Please sign up to create an account.",
+                    description: "No accounts found. Please sign up to create an account.",
                     variant: "destructive",
                 });
             }
         } catch (error) {
+            console.error("Login error:", error);
             toast({
                 title: "Error",
                 description: "An error occurred during login. Please try again.",

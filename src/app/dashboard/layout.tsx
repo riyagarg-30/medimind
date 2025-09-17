@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -26,6 +27,12 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ChatWidget } from '@/components/chat-widget';
+import { useEffect, useState } from 'react';
+
+type CurrentUser = {
+  name: string;
+  profilePic: string;
+}
 
 export default function DashboardLayout({
   children,
@@ -33,6 +40,21 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    try {
+      const userStr = localStorage.getItem('currentUser');
+      if (userStr) {
+        setCurrentUser(JSON.parse(userStr));
+      }
+    } catch (error) {
+      console.error("Failed to load current user from local storage", error);
+    }
+  }, []);
+
   const navItems = [
     { href: "/dashboard", icon: <Home />, label: "Symptom Checker" },
     { href: "/dashboard/chatbot", icon: <Bot />, label: "Chatbot" },
@@ -108,12 +130,14 @@ export default function DashboardLayout({
             <ThemeToggle />
             <Link href="/dashboard/profile">
                 <Avatar>
-                    <AvatarImage
-                    src="https://picsum.photos/seed/101/128/128"
-                    alt="User avatar"
-                    data-ai-hint="female portrait"
-                    />
-                    <AvatarFallback>U</AvatarFallback>
+                    {isClient && currentUser && <AvatarImage
+                      src={currentUser.profilePic}
+                      alt="User avatar"
+                      data-ai-hint="female portrait"
+                    />}
+                    <AvatarFallback>
+                      {isClient && currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </AvatarFallback>
                 </Avatar>
             </Link>
         </motion.header>

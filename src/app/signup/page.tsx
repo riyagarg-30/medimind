@@ -31,7 +31,8 @@ export default function SignupPage() {
             return;
         }
 
-        const userDetails = {
+        const newUser = {
+            id: Date.now(),
             name,
             email,
             address,
@@ -41,26 +42,30 @@ export default function SignupPage() {
         };
 
         try {
-            // Check if user already exists
-            if (localStorage.getItem('userDetails')) {
-                const existingDetails = JSON.parse(localStorage.getItem('userDetails')!);
-                if (existingDetails.email === email) {
-                    toast({
-                        title: "Account Exists",
-                        description: "An account with this email already exists. Please log in.",
-                        variant: "destructive",
-                    });
-                    return;
-                }
+            const savedUsers = localStorage.getItem('users');
+            const users = savedUsers ? JSON.parse(savedUsers) : [];
+
+            const userExists = users.some((user: any) => user.email === email);
+
+            if (userExists) {
+                toast({
+                    title: "Account Exists",
+                    description: "An account with this email already exists. Please log in.",
+                    variant: "destructive",
+                });
+                return;
             }
             
-            localStorage.setItem('userDetails', JSON.stringify(userDetails));
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+
             toast({
                 title: "Account Created!",
                 description: "You can now log in with your new account.",
             });
             router.push('/login');
         } catch (error) {
+            console.error("Signup error:", error);
             toast({
                 title: "Error",
                 description: "Could not create account. Please try again.",

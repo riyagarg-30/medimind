@@ -10,26 +10,31 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+type User = {
+    id: number;
+    name: string;
+    email: string;
+    age: number | '';
+    address: string;
+    profilePic: string;
+    password?: string;
+}
+
 export default function ProfilePage() {
     const { toast } = useToast();
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [age, setAge] = useState<number | ''>('');
-    const [address, setAddress] = useState('');
-    const [profilePic, setProfilePic] = useState('https://picsum.photos/seed/101/128/128');
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
         try {
-            const savedDetails = localStorage.getItem('userDetails');
+            const savedDetails = localStorage.getItem('currentUser');
             if (savedDetails) {
-                const userDetails = JSON.parse(savedDetails);
-                setName(userDetails.name || '');
-                setEmail(userDetails.email || '');
-                setAge(userDetails.age || '');
-                setAddress(userDetails.address || '');
-                setProfilePic(userDetails.profilePic || `https://picsum.photos/seed/${Math.random()}/128/128`);
+                setCurrentUser(JSON.parse(savedDetails));
+            } else {
+                // Handle case where user is not logged in, maybe redirect or show a message.
+                // For now, we'll just log an error.
+                console.error("No current user found in local storage.");
             }
         } catch (error) {
             console.error("Failed to load user details from local storage", error);
@@ -42,29 +47,40 @@ export default function ProfilePage() {
     }, [toast]);
 
     const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
+        if (e.target.files && e.target.files[0] && currentUser) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                setProfilePic(event.target?.result as string);
+                const newPic = event.target?.result as string;
+                setCurrentUser({ ...currentUser, profilePic: newPic });
             };
             reader.readAsDataURL(e.target.files[0]);
         }
     };
 
-    const handleSaveChanges = () => {
-        try {
-            const currentDetails = localStorage.getItem('userDetails');
-            const parsedDetails = currentDetails ? JSON.parse(currentDetails) : {};
+    const handleFieldChange = (field: keyof User, value: string | number) => {
+        if (currentUser) {
+            setCurrentUser({ ...currentUser, [field]: value });
+        }
+    };
 
-            const userDetails = {
-                ...parsedDetails,
-                name,
-                email,
-                age,
-                address,
-                profilePic,
-            };
-            localStorage.setItem('userDetails', JSON.stringify(userDetails));
+    const handleSaveChanges = () => {
+        if (!currentUser) return;
+
+        try {
+            // Update the currentUser in localStorage
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+            // Also update the user's details in the main users array
+            const allUsersString = localStorage.getItem('users');
+            if (allUsersString) {
+                let allUsers = JSON.parse(allUsersString);
+                const userIndex = allUsers.findIndex((u: User) => u.id === currentUser.id);
+                if (userIndex > -1) {
+                    allUsers[userIndex] = currentUser;
+                    localStorage.setItem('users', JSON.stringify(allUsers));
+                }
+            }
+
             toast({
                 title: "Profile Updated",
                 description: "Your information has been successfully saved.",
@@ -79,6 +95,22 @@ export default function ProfilePage() {
         }
     };
 
+    if (!isClient || !currentUser) {
+        // You can return a loader here
+        return (
+            <div className="p-4 md:p-8 flex justify-center items-start">
+                <Card className="w-full max-w-2xl">
+                    <CardHeader>
+                        <CardTitle>Personal Information</CardTitle>
+                        <CardDescription>
+                            Loading your personal details...
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        );
+    }
+
     return (
         <div className="p-4 md:p-8 flex justify-center items-start">
             <Card className="w-full max-w-2xl">
@@ -92,9 +124,9 @@ export default function ProfilePage() {
                     <div className="flex flex-col items-center space-y-4">
                         <div className="relative">
                             <Avatar className="h-32 w-32 border-4 border-primary/20">
-                                {isClient && <AvatarImage src={profilePic} alt="Profile picture" data-ai-hint="female portrait" />}
+                                <AvatarImage src={currentUser.profilePic} alt="Profile picture" data-ai-hint="female portrait" />
                                 <AvatarFallback>
-                                    {name?.charAt(0).toUpperCase() || 'U'}
+                                    {currentUser.name?.charAt(0).toUpperCase() || 'U'}
                                 </AvatarFallback>
                             </Avatar>
                             <label htmlFor="profile-pic-upload" className="absolute bottom-1 right-1 bg-primary text-primary-foreground p-2 rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
@@ -107,19 +139,19 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="name">Full Name</Label>
-                            {isClient && <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Jane Doe" />}
+                            <Input id="name" value={currentUser.name} onChange={e => handleFieldChange('name', e.target.value)} placeholder="Jane Doe" />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="email">Email Address</Label>
-                            {isClient && <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="jane.doe@example.com"/>}
+                            <Input id="email" type="email" value={currentUser.email} onChange={e => handleFieldChange('email', e.target.value)} placeholder="jane.doe@example.com"/>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="age">Age</Label>
-                            {isClient && <Input id="age" type="number" value={age} onChange={e => setAge(e.target.value === '' ? '' : Number(e.target.value))} placeholder="28" />}
+                            <Input id="age" type="number" value={currentUser.age} onChange={e => handleFieldChange('age', e.target.value === '' ? '' : Number(e.target.value))} placeholder="28" />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="address">Address</Label>
-                            {isClient && <Input id="address" value={address} onChange={e => setAddress(e.target.value)} placeholder="456 Health Ave, Wellness Town"/>}
+                            <Input id="address" value={currentUser.address} onChange={e => handleFieldChange('address', e.target.value)} placeholder="456 Health Ave, Wellness Town"/>
                         </div>
                     </div>
                 </CardContent>
