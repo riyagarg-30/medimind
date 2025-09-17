@@ -48,12 +48,13 @@ export default function SignupPage() {
             const savedUsers = localStorage.getItem('users');
             const users = savedUsers ? JSON.parse(savedUsers) : [];
 
+            // Stricter check: ensure email is unique across all roles.
             const userExists = users.some((user: any) => user.email === email);
 
             if (userExists) {
                 toast({
                     title: "Account Exists",
-                    description: "An account with this email already exists. Please log in.",
+                    description: "An account with this email already exists. Please log in or use a different email.",
                     variant: "destructive",
                 });
                 return;
