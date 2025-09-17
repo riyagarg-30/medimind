@@ -75,7 +75,7 @@ export default function ProfilePage() {
             // Also update the user's details in the main users array
             const allUsersString = localStorage.getItem('users');
             if (allUsersString) {
-                let allUsers = JSON.parse(allUsersString);
+                let allUsers: User[] = JSON.parse(allUsersString);
                 const userIndex = allUsers.findIndex((u: User) => u.id === currentUser.id);
                 if (userIndex > -1) {
                     allUsers[userIndex] = currentUser;
