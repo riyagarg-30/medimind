@@ -29,8 +29,8 @@ export default function HomePage() {
                 Welcome to MediMind
             </h1>
             
-            <p className="text-4xl text-muted-foreground mb-12">
-                How are you feeling today? 🤔
+            <p className="text-xl text-muted-foreground mb-12">
+                Your AI-Powered Health Companion
             </p>
 
             <div className="flex gap-4">
