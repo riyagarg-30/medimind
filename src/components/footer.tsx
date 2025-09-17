@@ -1,5 +1,5 @@
 
-import { Linkedin, Facebook, Twitter, Mail, Phone } from 'lucide-react';
+import { Linkedin, Facebook, Twitter, Mail, Phone, Book, Shield, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from './icons';
 
@@ -36,18 +36,27 @@ export function Footer() {
           </div>
 
           <div>
-             <h3 className="text-lg font-semibold mb-4">Follow Us</h3>
-             <div className="flex justify-center md:justify-start space-x-4">
-                <Link href="https://www.linkedin.com/in/riya-garg-98a09a334?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                    <Linkedin className="h-6 w-6" />
-                </Link>
-                <Link href="#" className="text-muted-foreground hover:text-primary">
-                    <Facebook className="h-6 w-6" />
-                </Link>
-                <Link href="#" className="text-muted-foreground hover:text-primary">
-                    <Twitter className="h-6 w-6" />
-                </Link>
-             </div>
+             <h3 className="text-lg font-semibold mb-4">Learn More</h3>
+             <ul className="space-y-2 text-sm">
+                <li>
+                    <Link href="/dashboard/about" className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground hover:text-primary">
+                        <Book className="h-4 w-4"/>
+                        About Us
+                    </Link>
+                </li>
+                <li>
+                    <Link href="#" className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground hover:text-primary">
+                        <Shield className="h-4 w-4"/>
+                        Privacy Policy
+                    </Link>
+                </li>
+                <li>
+                    <Link href="#" className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground hover:text-primary">
+                        <FileText className="h-4 w-4"/>
+                        Terms of Service
+                    </Link>
+                </li>
+             </ul>
           </div>
         </div>
         <div className="mt-8 border-t border-border pt-4 text-center text-sm text-muted-foreground">
