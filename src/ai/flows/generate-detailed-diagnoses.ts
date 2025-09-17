@@ -70,8 +70,15 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     outputSchema: GenerateDetailedDiagnosesOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+      const {output} = await prompt(input);
+      if (!output) {
+        throw new Error("The AI model returned an empty response. Please try again.");
+      }
+      return output;
+    } catch (error) {
+        console.error("Detailed diagnosis flow failed:", error);
+        throw new Error("An error occurred while communicating with the AI service. Please try again later.");
+    }
   }
 );
-
