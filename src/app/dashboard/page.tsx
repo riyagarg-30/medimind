@@ -121,8 +121,8 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
        <div className="w-full max-w-4xl text-center">
-            <h1 className="text-4xl text-muted-foreground mb-12">
-                How are you feeling today? 🤔
+            <h1 className="text-4xl font-bold text-muted-foreground mb-12">
+                How are you feeling today?
             </h1>
       </div>
       <motion.div
@@ -446,3 +446,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
