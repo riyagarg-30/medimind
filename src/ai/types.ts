@@ -29,6 +29,14 @@ const RedFlagSchema = z.object({
     reasoning: z.string().describe("The clinical reasoning for why this is a red flag (e.g., 'Critical anemia risk').")
 });
 
+const BiomarkerSchema = z.object({
+    name: z.string().describe("The name of the biomarker, e.g., 'Hemoglobin'."),
+    value: z.string().describe("The user's value for the biomarker, e.g., '12.5' or '140/90'."),
+    unit: z.string().describe("The unit of measurement, e.g., 'g/dL' or 'mmHg'."),
+    normalRange: z.string().describe("The standard normal range for this biomarker, e.g., '13.5-17.5 g/dL'."),
+    explanation: z.string().describe("A brief explanation of what this biomarker indicates."),
+});
+
 export const GenerateDetailedDiagnosesOutputSchema = z.object({
     conditions: z.array(ConditionSchema).describe("A list of the most likely medical conditions, ranked by likelihood."),
     riskScore: z.number().int().min(0).max(100).describe("An overall risk score from 0 to 100."),
@@ -36,6 +44,7 @@ export const GenerateDetailedDiagnosesOutputSchema = z.object({
     nextSteps: z.string().describe("Clear, actionable next steps for the user."),
     dataQuality: DataQualitySchema.describe("An assessment of the input data quality."),
     redFlags: z.array(RedFlagSchema).describe("A list of any urgent or life-threatening findings detected."),
+    biomarkerAnalysis: z.array(BiomarkerSchema).optional().describe("An analysis of key biomarkers extracted from the user's report."),
     summaryReport: z.string().describe("A fully explainable natural language diagnostic report summarizing all findings."),
     disclaimer: z.string().describe("A mandatory disclaimer stating that this is an AI-generated analysis and not a substitute for professional medical advice."),
 });

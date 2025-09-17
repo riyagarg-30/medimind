@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
 import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
-import { Loader2, AlertTriangle, Activity, Upload, X } from 'lucide-react';
+import { Loader2, AlertTriangle, Activity, Upload, X, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
 import { ChartConfig, ChartContainer } from '@/components/ui/chart';
@@ -62,6 +62,12 @@ export default function DashboardPage() {
     }
   };
   
+  const getProgressColor = (value: number) => {
+    if (value < 40) return 'bg-green-500';
+    if (value < 70) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   return (
     <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
       <motion.div
@@ -228,6 +234,36 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+          
+           {/* Biomarker Analysis */}
+          {analysis.biomarkerAnalysis && analysis.biomarkerAnalysis.length > 0 && (
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Key Biomarkers from Report</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {analysis.biomarkerAnalysis.map((biomarker, index) => (
+                  <Card key={index}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <FileText className="text-primary"/>
+                        {biomarker.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-2xl font-bold">{biomarker.value}</span>
+                        <span className="text-muted-foreground">{biomarker.unit}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Normal Range: {biomarker.normalRange}
+                      </div>
+                      <p className="text-sm pt-2">{biomarker.explanation}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
 
           {/* Ranked Diagnostic Analysis */}
           <div>
@@ -282,4 +318,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
