@@ -17,6 +17,7 @@ const prompt = ai.definePrompt({
   name: 'generateDetailedDiagnosesPrompt',
   input: {schema: GenerateDetailedDiagnosesInputSchema},
   output: {schema: GenerateDetailedDiagnosesOutputSchema},
+  model: 'googleai/gemini-1.5-pro',
   prompt: `You are an expert medical AI assistant. Your purpose is to provide a detailed, structured, traceable, and explainable preliminary diagnosis based on an uploaded medical report.
 
   Analyze the user's uploaded medical report. You should also consider the optional symptoms and description for context. Perform OCR and extract all specific medical data, values, and clinical notes from the report.
@@ -73,15 +74,7 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const {output} = await ai.generate({
-        model: 'googleai/gemini-1.5-pro',
-        prompt: await prompt.render({data: input}),
-        output: {
-          format: 'json',
-          schema: GenerateDetailedDiagnosesOutputSchema,
-        },
-      });
-
+      const {output} = await prompt(input);
       if (!output) {
         throw new Error("The AI model returned an empty response. Please try again.");
       }

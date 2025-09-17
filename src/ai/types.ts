@@ -52,23 +52,6 @@ export const GenerateDetailedDiagnosesOutputSchema = z.object({
 export type GenerateDetailedDiagnosesOutput = z.infer<typeof GenerateDetailedDiagnosesOutputSchema>;
 
 
-// From generate-simple-diagnoses.ts
-export const GenerateSimpleDiagnosesInputSchema = z.object({
-  symptoms: z.string().describe('The key symptoms exhibited by the user (e.g. "Headache").'),
-  description: z.string().optional().describe('A more detailed description of the symptoms.'),
-});
-export type GenerateSimpleDiagnosesInput = z.infer<typeof GenerateSimpleDiagnosesInputSchema>;
-
-const SimpleDiagnosisSchema = z.object({
-  diagnosis: z.string().describe("The name of the possible medical condition."),
-  justification: z.string().describe("A brief justification for why this diagnosis is possible based on the provided symptoms."),
-  medications: z.array(z.string()).optional().describe("A list of common medications for this condition."),
-});
-
-export const GenerateSimpleDiagnosesOutputSchema = z.array(SimpleDiagnosisSchema);
-export type GenerateSimpleDiagnosesOutput = z.infer<typeof GenerateSimpleDiagnosesOutputSchema>;
-
-
 // From chatbot.ts
 const HistoryMessagePartSchema = z.object({
     text: z.string().optional(),
