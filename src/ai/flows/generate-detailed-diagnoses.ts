@@ -48,8 +48,8 @@ const prompt = ai.definePrompt({
       -   If no biomarkers are found, return an empty array. This is a critical field, do your best to extract it.
 
   4.  **Ranked Diagnostic Analysis**:
-      -   Provide a list of 2-3 possible conditions based on the report, ranked from most to least likely.
-      -   For each condition: provide Name, Likelihood, Evidence (from the report), Explanation, Differential Diagnoses, and common Medications.
+      -   Provide a list of 2-4 possible conditions based on the report, ranked from most to least likely.
+      -   For each condition: provide Name, a numeric confidenceScore from 0 to 100, Evidence (from the report), Explanation, Differential Diagnoses, and common Medications.
 
   5.  **Overall Assessment & Recommendations**:
       -   **Risk Score**: An overall risk score from 0 to 100 based on all findings.

@@ -14,7 +14,7 @@ export type GenerateDetailedDiagnosesInput = z.infer<typeof GenerateDetailedDiag
 const ConditionSchema = z.object({
     name: z.string().describe("The name of the possible medical condition."),
     explanation: z.string().describe("A detailed, evidence-based explanation linking the user's symptoms to this condition."),
-    likelihood: z.enum(["High", "Medium", "Low"]).describe("The likelihood that the user has this condition based on the provided information."),
+    confidenceScore: z.number().int().min(0).max(100).describe("A numeric confidence score from 0 to 100 on the likelihood of this condition."),
     differentialDiagnoses: z.array(z.string()).describe("A list of other possible conditions to consider."),
     medications: z.array(z.string()).describe("A list of common medications, with a disclaimer to consult a doctor."),
     evidence: z.array(z.string()).describe("List of specific data points (e.g., 'Hemoglobin = 8 g/dL') supporting this diagnosis."),

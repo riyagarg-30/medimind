@@ -17,7 +17,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import Image from 'next/image';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { ClinicianDashboard } from '@/components/clinician-dashboard';
 
 type HistoryItem = {
@@ -455,46 +455,86 @@ export default function DashboardPage() {
 
 
           {/* Ranked Diagnostic Analysis */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Ranked Diagnostic Analysis</h3>
-            <Accordion type="single" collapsible defaultValue="item-0">
-              {analysis.conditions?.map((condition, index) => (
-                <AccordionItem value={`item-${index}`} key={index}>
-                  <AccordionTrigger>
-                    <div className="flex items-center justify-between w-full pr-4">
-                        <span className="font-semibold text-lg">{condition.name}</span>
-                        <Badge variant={condition.likelihood === 'High' ? 'destructive' : condition.likelihood === 'Medium' ? 'default' : 'outline'}>
-                            {condition.likelihood} Likelihood
-                        </Badge>
+          {analysis.conditions && analysis.conditions.length > 0 && (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Diagnostic Confidence</CardTitle>
+                    <CardDescription>Confidence scores for possible conditions based on your input.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="w-full h-64">
+                         <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={analysis.conditions} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
+                                <XAxis dataKey="name" />
+                                <YAxis />
+                                <Tooltip
+                                    cursor={{ fill: 'hsl(var(--accent))' }}
+                                    content={({ active, payload, label }) => {
+                                         if (active && payload && payload.length) {
+                                            return (
+                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                                    <p className="font-bold">{label}</p>
+                                                    <p className="text-sm text-primary">{`Confidence: ${payload[0].value}%`}</p>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                                <Legend />
+                                <Bar dataKey="confidenceScore" name="Confidence Score" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <div>
-                      <h4 className="font-semibold">Explanation</h4>
-                      <p className="text-sm text-muted-foreground">{condition.explanation}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Evidence</h4>
-                      <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                        {condition.evidence.map((e, i) => <li key={i}>{e}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Common Medications</h4>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {condition.medications.map(med => <Badge key={med} variant="outline">{med}</Badge>)}
-                      </div>
-                       <p className="text-xs text-muted-foreground mt-2">Disclaimer: Consult a doctor before taking any medication.</p>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Differential Diagnoses</h4>
-                       <p className="text-sm text-muted-foreground">{condition.differentialDiagnoses.join(', ')}</p>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
+                </CardContent>
+            </Card>
+          )}
+
+           {/* Detailed Accordion */}
+           {analysis.conditions && analysis.conditions.length > 0 && (
+            <div>
+                <h3 className="text-xl font-semibold mb-4">Detailed Diagnostic Breakdown</h3>
+                <Accordion type="single" collapsible defaultValue="item-0">
+                {analysis.conditions?.map((condition, index) => (
+                    <AccordionItem value={`item-${index}`} key={index}>
+                    <AccordionTrigger>
+                        <div className="flex items-center justify-between w-full pr-4">
+                            <span className="font-semibold text-lg">{condition.name}</span>
+                             <Badge variant={condition.confidenceScore > 75 ? 'destructive' : condition.confidenceScore > 50 ? 'default' : 'outline'}>
+                                {condition.confidenceScore}% Confidence
+                            </Badge>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-2">
+                        <div>
+                        <h4 className="font-semibold">Explanation</h4>
+                        <p className="text-sm text-muted-foreground">{condition.explanation}</p>
+                        </div>
+                        <div>
+                        <h4 className="font-semibold">Evidence</h4>
+                        <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                            {condition.evidence.map((e, i) => <li key={i}>{e}</li>)}
+                        </ul>
+                        </div>
+                        <div>
+                        <h4 className="font-semibold">Common Medications</h4>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            {condition.medications.map(med => <Badge key={med} variant="outline">{med}</Badge>)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">Disclaimer: Consult a doctor before taking any medication.</p>
+                        </div>
+                        <div>
+                        <h4 className="font-semibold">Differential Diagnoses</h4>
+                        <p className="text-sm text-muted-foreground">{condition.differentialDiagnoses.join(', ')}</p>
+                        </div>
+                    </AccordionContent>
+                    </AccordionItem>
+                ))}
+                </Accordion>
+            </div>
+          )}
+
 
           <Alert>
               <AlertTriangle className="h-4 w-4" />
