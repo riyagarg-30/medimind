@@ -24,6 +24,15 @@ type HistoryItem = {
     result: string;
 };
 
+const OFFLINE_RESPONSE = `It looks like you're currently offline. While I can't access my AI diagnostic tools right now, here is some general advice:
+
+- **For minor symptoms:** Ensure you get adequate rest and stay hydrated.
+- **For injuries:** For minor cuts, clean the area and apply a bandage. For sprains, remember R.I.C.E (Rest, Ice, Compression, Elevation).
+- **When to seek help:** If you are experiencing severe symptoms like chest pain, difficulty breathing, severe headache, or a high fever, please seek immediate medical attention from a professional.
+
+Please reconnect to the internet for a full analysis.`;
+
+
 export default function ChatbotPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -35,7 +44,8 @@ export default function ChatbotPage() {
     useEffect(() => {
         // Function to update online status
         const updateOnlineStatus = () => {
-            setIsOffline(!navigator.onLine);
+            const online = navigator.onLine;
+            setIsOffline(!online);
         };
 
         // Add event listeners for online/offline events
@@ -87,15 +97,16 @@ export default function ChatbotPage() {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
 
-        if (isOffline) {
-            setMessages(prevMessages => [...prevMessages, { role: 'model', parts: [{ text: "You appear to be offline. Please check your connection and try again." }] }]);
-            return;
-        }
-
         const userMessage = input;
         const newMessages: Message[] = [...messages, { role: 'user', parts: [{ text: userMessage }] }];
         setMessages(newMessages);
         setInput('');
+        
+        if (isOffline) {
+            setMessages([...newMessages, { role: 'model', parts: [{ text: OFFLINE_RESPONSE }] }]);
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -128,7 +139,7 @@ export default function ChatbotPage() {
                             <WifiOff className="h-4 w-4" />
                             <AlertTitle>You are currently offline</AlertTitle>
                             <AlertDescription>
-                                Chat functionality is disabled. Please reconnect to the internet.
+                                AI diagnostics are disabled. The chatbot is in offline mode.
                             </AlertDescription>
                         </Alert>
                     )}
@@ -177,9 +188,9 @@ export default function ChatbotPage() {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Type your symptoms here..."
                             className="flex-1"
-                            disabled={isLoading || isOffline}
+                            disabled={isLoading}
                         />
-                        <Button type="submit" disabled={isLoading || !input.trim() || isOffline}>
+                        <Button type="submit" disabled={isLoading || !input.trim()}>
                             Send
                         </Button>
                     </form>
