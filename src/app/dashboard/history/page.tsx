@@ -6,7 +6,6 @@ import { ClipboardList, FileText, Stethoscope } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-// In a real application, you would fetch this from a database.
 type HistoryItem = {
     id: number;
     date: string;
@@ -18,14 +17,20 @@ type HistoryItem = {
 export default function HistoryPage() {
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [isClient, setIsClient] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
     useEffect(() => {
         setIsClient(true);
-        // Load history from localStorage
         try {
-            const savedHistory = localStorage.getItem('symptomHistory');
-            if (savedHistory) {
-                setHistory(JSON.parse(savedHistory));
+            const userStr = localStorage.getItem('currentUser');
+            if (userStr) {
+                const currentUser = JSON.parse(userStr);
+                setCurrentUserId(currentUser.id);
+                const historyKey = `symptomHistory_${currentUser.id}`;
+                const savedHistory = localStorage.getItem(historyKey);
+                if (savedHistory) {
+                    setHistory(JSON.parse(savedHistory));
+                }
             }
         } catch (error) {
             console.error("Could not load history from local storage:", error);
@@ -33,8 +38,10 @@ export default function HistoryPage() {
     }, []);
 
     const clearHistory = () => {
+        if (!currentUserId) return;
         try {
-            localStorage.removeItem('symptomHistory');
+            const historyKey = `symptomHistory_${currentUserId}`;
+            localStorage.removeItem(historyKey);
             setHistory([]);
         } catch (error) {
             console.error("Could not clear history from local storage:", error);

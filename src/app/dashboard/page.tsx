@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
 import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
-import { Loader2, AlertTriangle, Activity, X, ImageIcon } from 'lucide-react';
+import { Loader2, AlertTriangle, Activity, X, ImageIcon, Smile } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
 import { Label } from '@/components/ui/label';
@@ -82,10 +82,15 @@ export default function DashboardPage() {
       };
 
       try {
-        const savedHistory = localStorage.getItem('symptomHistory');
+        const userStr = localStorage.getItem('currentUser');
+        if (!userStr) return;
+        const currentUser = JSON.parse(userStr);
+        const historyKey = `symptomHistory_${currentUser.id}`;
+        
+        const savedHistory = localStorage.getItem(historyKey);
         const history: HistoryItem[] = savedHistory ? JSON.parse(savedHistory) : [];
         const updatedHistory = [newItem, ...history];
-        localStorage.setItem('symptomHistory', JSON.stringify(updatedHistory));
+        localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
       } catch (error) {
           console.error("Failed to save to history:", error);
       }
@@ -121,8 +126,8 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
        <div className="w-full max-w-4xl text-center">
-            <h1 className="text-4xl font-bold text-primary mb-12">
-                How are you feeling today? 😇
+            <h1 className="text-4xl font-bold text-primary mb-12 flex items-center justify-center gap-3">
+                How are you feeling today? 👼
             </h1>
       </div>
       <motion.div
@@ -446,6 +451,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
-    

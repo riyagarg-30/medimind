@@ -82,11 +82,16 @@ export default function ChatbotPage() {
         };
 
         try {
-            const savedHistory = localStorage.getItem('symptomHistory');
+            const userStr = localStorage.getItem('currentUser');
+            if (!userStr) return;
+            const currentUser = JSON.parse(userStr);
+            const historyKey = `symptomHistory_${currentUser.id}`;
+
+            const savedHistory = localStorage.getItem(historyKey);
             const history: HistoryItem[] = savedHistory ? JSON.parse(savedHistory) : [];
             // Add new item to the beginning of the array
             const updatedHistory = [newItem, ...history];
-            localStorage.setItem('symptomHistory', JSON.stringify(updatedHistory));
+            localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
         } catch (error) {
             console.error("Failed to save to history:", error);
         }
@@ -95,7 +100,7 @@ export default function ChatbotPage() {
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        if (!input.trim() || isLoading) return;
+        if (!input.trim()) return;
 
         const userMessage = input;
         const newMessages: Message[] = [...messages, { role: 'user', parts: [{ text: userMessage }] }];
@@ -139,7 +144,7 @@ export default function ChatbotPage() {
                             <WifiOff className="h-4 w-4" />
                             <AlertTitle>You are currently offline</AlertTitle>
                             <AlertDescription>
-                                AI diagnostics are disabled. The chatbot is in offline mode.
+                                AI diagnostics are disabled. You can interact with the offline assistant.
                             </AlertDescription>
                         </Alert>
                     )}
@@ -188,9 +193,9 @@ export default function ChatbotPage() {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Type your symptoms here..."
                             className="flex-1"
-                            disabled={isLoading}
+                            disabled={isLoading && !isOffline}
                         />
-                        <Button type="submit" disabled={isLoading || !input.trim()}>
+                        <Button type="submit" disabled={(isLoading && !isOffline) || !input.trim()}>
                             Send
                         </Button>
                     </form>
