@@ -42,10 +42,15 @@ const chatbotFlow = ai.defineFlow(
     `;
 
     // Ensure history is correctly typed and sanitized
-    const typedHistory: Message[] = (history || []).map(h => ({
-      role: h.role,
-      parts: h.parts.map(p => ({ text: p.text || '' })) // Sanitize parts to prevent undefined
-    }));
+    const typedHistory: Message[] = (history || [])
+        .map(h => ({
+            role: h.role,
+            parts: h.parts
+                .map(p => (p.text ? { text: p.text } : null))
+                .filter((p): p is { text: string } => p !== null)
+        }))
+        .filter(h => h.parts.length > 0);
+
 
     const fullHistory: Message[] = [
       ...typedHistory,
