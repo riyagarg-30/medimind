@@ -67,7 +67,7 @@ export const AskChatbotInputSchema = z.object({
   query: z.string().describe('The user\'s query.'),
   history: z.array(HistoryMessageSchema).optional().describe('The conversation history.'),
 });
-export type AskChatbotInput = z.infer<typeof AskChatbotInputSchema>;
+export type AskChatbotInput = z-infer<typeof AskChatbotInputSchema>;
 
 export const QnaChatbotInputSchema = z.object({
   history: z.array(HistoryMessageSchema).optional().describe('The conversation history.'),
