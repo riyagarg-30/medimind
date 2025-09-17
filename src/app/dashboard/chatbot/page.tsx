@@ -4,13 +4,11 @@
 import { useState, useRef, useEffect, FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Bot, User, Loader2, WifiOff } from 'lucide-react';
+import { Bot, User, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { askChatbot } from '@/ai/flows/chatbot';
 import type { Part } from '@genkit-ai/googleai';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { askOfflineChatbot } from '@/ai/flows/offline-chatbot';
 
 type Message = {
     role: 'user' | 'model';
@@ -29,47 +27,8 @@ export default function ChatbotPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isOffline, setIsOffline] = useState(false);
-    const [history, setHistory] = useState<HistoryItem[]>([]);
-
+    
     const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        // Function to update online status
-        const updateOnlineStatus = () => {
-            const online = navigator.onLine;
-            setIsOffline(!online);
-        };
-        
-        // Load history from local storage
-        try {
-            const userStr = localStorage.getItem('currentUser');
-            if (userStr) {
-                const currentUser = JSON.parse(userStr);
-                const historyKey = `symptomHistory_${currentUser.id}`;
-                const savedHistory = localStorage.getItem(historyKey);
-                if (savedHistory) {
-                    setHistory(JSON.parse(savedHistory));
-                }
-            }
-        } catch (error) {
-             console.error("Could not load history from local storage:", error);
-        }
-
-        // Add event listeners for online/offline events
-        window.addEventListener('online', updateOnlineStatus);
-        window.addEventListener('offline', updateOnlineStatus);
-
-        // Initial check
-        updateOnlineStatus();
-
-        // Cleanup listeners on component unmount
-        return () => {
-            window.removeEventListener('online', updateOnlineStatus);
-            window.removeEventListener('offline', updateOnlineStatus);
-        };
-    }, []);
-
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -100,7 +59,6 @@ export default function ChatbotPage() {
             // Add new item to the beginning of the array
             const updatedHistory = [newItem, ...currentHistory];
             localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
-            setHistory(updatedHistory); // Update state
         } catch (error) {
             console.error("Failed to save to history:", error);
         }
@@ -117,13 +75,6 @@ export default function ChatbotPage() {
         setInput('');
         
         setIsLoading(true);
-
-        if (isOffline) {
-            const offlineResponse = await askOfflineChatbot(userMessage, history);
-            setMessages([...newMessages, { role: 'model', parts: [{ text: offlineResponse }] }]);
-            setIsLoading(false);
-            return;
-        }
 
         try {
             const response = await askChatbot({
@@ -150,15 +101,6 @@ export default function ChatbotPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
-                    {isOffline && (
-                        <Alert variant="destructive">
-                            <WifiOff className="h-4 w-4" />
-                            <AlertTitle>You are currently offline</AlertTitle>
-                            <AlertDescription>
-                                AI diagnostics are disabled. You are interacting with the offline assistant, which has access to your past analysis history.
-                            </AlertDescription>
-                        </Alert>
-                    )}
                     <ScrollArea className="flex-1 p-4 border rounded-lg bg-secondary/30" ref={scrollAreaRef}>
                         <div className="space-y-4">
                             {messages.map((msg, index) => (
