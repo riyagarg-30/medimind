@@ -28,6 +28,7 @@ import { motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { ChatWidget } from '@/components/chat-widget';
 import { useEffect, useState } from 'react';
+import { Footer } from '@/components/footer';
 
 type CurrentUser = {
   name: string;
@@ -142,6 +143,7 @@ export default function DashboardLayout({
             </Link>
         </motion.header>
         <main className="flex-1 overflow-auto">{children}</main>
+        <Footer />
         <ChatWidget />
       </SidebarInset>
     </SidebarProvider>
