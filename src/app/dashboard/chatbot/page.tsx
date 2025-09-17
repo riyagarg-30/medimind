@@ -15,14 +15,6 @@ type Message = {
     parts: Part[];
 };
 
-type HistoryItem = {
-    id: number;
-    date: string;
-    inputType: "Symptoms" | "Report";
-    input: string;
-    result: string;
-};
-
 export default function ChatbotPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -38,31 +30,6 @@ export default function ChatbotPage() {
             }
         }
     }, [messages]);
-
-    const saveToHistory = (query: string, response: string) => {
-        const newItem: HistoryItem = {
-            id: Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            inputType: 'Symptoms',
-            input: query,
-            result: response.split('\n\n')[0], // Save a summary
-        };
-
-        try {
-            const userStr = localStorage.getItem('currentUser');
-            if (!userStr) return;
-            const currentUser = JSON.parse(userStr);
-            const historyKey = `symptomHistory_${currentUser.id}`;
-
-            const savedHistory = localStorage.getItem(historyKey);
-            const currentHistory: HistoryItem[] = savedHistory ? JSON.parse(savedHistory) : [];
-            // Add new item to the beginning of the array
-            const updatedHistory = [newItem, ...currentHistory];
-            localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
-        } catch (error) {
-            console.error("Failed to save to history:", error);
-        }
-    };
 
 
     const handleSubmit = async (e: FormEvent) => {
@@ -82,7 +49,6 @@ export default function ChatbotPage() {
                 history: messages
             });
             setMessages([...newMessages, { role: 'model', parts: [{ text: response }] }]);
-            saveToHistory(userMessage, response);
         } catch (error) {
             console.error("Error asking chatbot:", error);
             setMessages([...newMessages, { role: 'model', parts: [{ text: "Sorry, I'm having trouble connecting. Please try again later." }] }]);
