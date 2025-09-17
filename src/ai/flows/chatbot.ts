@@ -41,10 +41,10 @@ const chatbotFlow = ai.defineFlow(
     Be conversational and empathetic.
     `;
 
-    // Ensure history is correctly typed
+    // Ensure history is correctly typed and sanitized
     const typedHistory: Message[] = (history || []).map(h => ({
       role: h.role,
-      parts: h.parts.map(p => ({ text: p.text || '' }))
+      parts: h.parts.map(p => ({ text: p.text || '' })) // Sanitize parts to prevent undefined
     }));
 
     const fullHistory: Message[] = [
