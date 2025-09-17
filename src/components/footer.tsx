@@ -20,11 +20,14 @@ export function Footer() {
           
           <div>
             <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
-            <div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground text-sm">
-                <Mail className="h-4 w-4"/>
-                <a href="mailto:contact@medimind.com" className="hover:text-primary">
-                    contact@medimind.com
-                </a>
+            <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4"/>
+                    <a href="mailto:medimind84@gmail.com" className="hover:text-primary">
+                        medimind84@gmail.com
+                    </a>
+                </div>
+                <p className="text-xs text-muted-foreground/80">(Official Contact Mail)</p>
             </div>
           </div>
 
