@@ -136,10 +136,12 @@ export default function ProfilePage() {
                                 <input id="profile-pic-upload" type="file" className="hidden" accept="image/*" onChange={handleProfilePicChange} />
                             </label>
                         </div>
-                         <Badge variant={currentUser.role === 'clinician' ? 'default' : 'secondary'}>
-                            <UserCircle className="mr-2 h-4 w-4"/>
-                            {currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}
-                        </Badge>
+                         {currentUser.role && (
+                            <Badge variant={currentUser.role === 'clinician' ? 'default' : 'secondary'}>
+                                <UserCircle className="mr-2 h-4 w-4"/>
+                                {currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}
+                            </Badge>
+                         )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
