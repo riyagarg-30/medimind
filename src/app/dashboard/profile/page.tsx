@@ -88,8 +88,8 @@ export default function ProfilePage() {
                 
                 // Create the updated user object, combining form state with the stored password
                 const updatedUser: User = {
-                    ...currentUser,
-                    password: storedUser.password 
+                    ...storedUser, // Start with the original user data (including password)
+                    ...currentUser, // Overwrite with any changes from the form
                 };
 
                 // Update the user's details in the main users array
@@ -185,3 +185,5 @@ export default function ProfilePage() {
         </div>
     );
 }
+
+    
