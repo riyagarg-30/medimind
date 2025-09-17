@@ -99,5 +99,3 @@ export const QnaChatbotOutputSchema = z.object({
   isFinal: z.boolean().describe('Whether this is the final diagnosis or another question.'),
 });
 export type QnaChatbotOutput = z.infer<typeof QnaChatbotOutputSchema>;
-
-    

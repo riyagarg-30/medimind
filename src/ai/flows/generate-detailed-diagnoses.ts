@@ -17,7 +17,6 @@ const prompt = ai.definePrompt({
   name: 'generateDetailedDiagnosesPrompt',
   input: {schema: GenerateDetailedDiagnosesInputSchema},
   output: {schema: GenerateDetailedDiagnosesOutputSchema},
-  model: 'googleai/gemini-1.5-pro',
   prompt: `You are an expert medical AI assistant. Your purpose is to provide a detailed, structured, traceable, and explainable preliminary diagnosis based on an uploaded medical report.
 
   Analyze the user's uploaded medical report. You should also consider the optional symptoms and description for context. Perform OCR and extract all specific medical data, values, and clinical notes from the report.
@@ -71,23 +70,7 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     outputSchema: GenerateDetailedDiagnosesOutputSchema,
   },
   async input => {
-    if (!input.reportDataUri) {
-        throw new Error("A medical report is required for detailed analysis.");
-    }
-    
-    try {
-        const {output} = await prompt(input);
-
-        if (!output) {
-            throw new Error("The AI model could not generate a valid analysis for the provided report.");
-        }
-        return output;
-
-    } catch (error) {
-        console.error("Detailed diagnosis flow failed:", error);
-        throw new Error("An error occurred while communicating with the AI service. Please try again later.");
-    }
+    const {output} = await prompt(input);
+    return output!;
   }
 );
-
-    

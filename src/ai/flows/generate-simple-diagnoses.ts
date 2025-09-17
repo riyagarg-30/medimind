@@ -46,5 +46,3 @@ const generateSimpleDiagnosesFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    
