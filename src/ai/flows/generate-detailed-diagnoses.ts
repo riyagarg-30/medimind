@@ -69,7 +69,7 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
   },
   async input => {
     if (!input.symptoms && !input.reportDataUri) {
-        throw new Error("No symptoms or report provided for analysis.");
+        throw new Error("Please provide symptoms and/or a medical report for analysis.");
     }
     
     try {

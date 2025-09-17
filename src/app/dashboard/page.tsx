@@ -1,48 +1,58 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { generateSimpleDiagnoses } from '@/ai/flows/generate-simple-diagnoses';
-import { GenerateSimpleDiagnosesOutput } from '@/ai/types';
-import { Loader2, AlertTriangle, Activity, BarChart, FlaskConical, Stethoscope } from 'lucide-react';
+import { Textarea } from "@/components/ui/textarea";
+import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
+import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
+import { Loader2, AlertTriangle, Activity, Upload, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
 import { ChartConfig, ChartContainer } from '@/components/ui/chart';
-import { Bar, XAxis, YAxis, CartesianGrid, BarChart as RechartsBarChart } from 'recharts';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import Image from 'next/image';
+import { Progress } from '@/components/ui/progress';
 
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
-  const [analysis, setAnalysis] = useState<GenerateSimpleDiagnosesOutput | null>(null);
+  const [reportDataUri, setReportDataUri] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<GenerateDetailedDiagnosesOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setReportDataUri(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async () => {
-    if (!symptoms) return;
+    if (!symptoms && !reportDataUri) {
+      setError("Please enter your symptoms or upload a report to get an analysis.");
+      return;
+    }
 
     setIsLoading(true);
     setAnalysis(null);
     setError(null);
 
     try {
-      const result = await generateSimpleDiagnoses({ symptoms });
-      if (result.length === 0) {
-        setError("Could not determine a diagnosis from the symptoms. Please try being more descriptive.");
-      }
-      
-      const chartData = result.map(item => ({
-        name: item.diagnosis,
-        // Assign a random confidence for visualization
-        confidence: Math.floor(Math.random() * (95 - 70 + 1)) + 70,
-        fill: `hsl(var(--chart-${Math.floor(Math.random() * 5) + 1}))`
-      }));
-
-      // Augment original result with chart data for easier rendering
-      const analysisWithChartData = result.map((item, index) => ({...item, ...chartData[index]}));
-
-      setAnalysis(analysisWithChartData as any);
+      const result = await generateDetailedDiagnoses({ 
+        symptoms,
+        ...(reportDataUri && { reportDataUri }),
+       });
+      setAnalysis(result);
 
     } catch (err: any) {
       console.error("Analysis failed:", err);
@@ -51,21 +61,6 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   };
-
-  const chartConfig: ChartConfig = {
-    confidence: {
-      label: "Confidence",
-    },
-  };
-
-  if (analysis) {
-    analysis.forEach(item => {
-      chartConfig[item.diagnosis] = {
-        label: item.diagnosis,
-        color: (item as any).fill
-      }
-    });
-  }
   
   return (
     <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
@@ -77,28 +72,68 @@ export default function DashboardPage() {
       >
         <Card className="transition-all hover:shadow-lg">
           <CardHeader>
-            <CardTitle>Symptom Analysis Dashboard</CardTitle>
+            <CardTitle>AI-Powered Diagnostic Analysis</CardTitle>
             <CardDescription>
-              Enter your main symptom (e.g., 'sore throat', 'headache') to see a breakdown of possibilities.
+              Enter your symptoms and/or upload a medical report (e.g., blood test, imaging) for a detailed analysis.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex w-full items-center space-x-2">
-                <Input
-                    type="text"
-                    placeholder="e.g. 'I have a high fever and a cough'"
-                    value={symptoms}
-                    onChange={(e) => setSymptoms(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                />
-                <Button onClick={handleSubmit} disabled={isLoading || !symptoms}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity />}
-                    Analyze
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="symptoms">Describe your symptoms</Label>
+              <Textarea
+                  id="symptoms"
+                  placeholder="e.g. 'I have a high fever, a persistent dry cough, and I've been feeling extremely tired for the past three days.'"
+                  value={symptoms}
+                  onChange={(e) => setSymptoms(e.target.value)}
+                  rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Upload Medical Report (Optional)</Label>
+              <div className="flex items-center gap-4">
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="mr-2" />
+                  Upload Image
                 </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="image/png, image/jpeg, image/webp"
+                />
+                {reportDataUri && (
+                  <div className="relative group">
+                    <Image src={reportDataUri} alt="Report preview" width={48} height={48} className="rounded-md object-cover" />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setReportDataUri(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
+          <CardFooter>
+            <Button onClick={handleSubmit} disabled={isLoading || (!symptoms && !reportDataUri)}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity />}
+                Run Analysis
+            </Button>
+          </CardFooter>
         </Card>
       </motion.div>
+
+      {isLoading && (
+          <div className="w-full max-w-4xl mt-8 flex flex-col items-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">AI is analyzing your data... please wait.</p>
+          </div>
+      )}
 
       {error && (
          <motion.div
@@ -117,47 +152,134 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {analysis && analysis.length > 0 && !isLoading && (
+      {analysis && !isLoading && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="w-full max-w-4xl mt-8 grid grid-cols-1 md:grid-cols-2 gap-6"
+          className="w-full max-w-4xl mt-8 space-y-6"
         >
-            <Card className="md:col-span-2">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BarChart /> Likelihood of Conditions</CardTitle>
-                    <CardDescription>Based on the symptom '{symptoms}', here are the likely conditions and their confidence levels.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                        <RechartsBarChart data={analysis as any[]} layout="vertical" margin={{left: 10, right: 30}}>
-                            <CartesianGrid horizontal={false} />
-                            <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={10} style={{ fontSize: '12px' }} />
-                            <XAxis dataKey="confidence" type="number" domain={[0, 100]} hide />
-                             <Bar dataKey="confidence" radius={4}>
-                                {((analysis as any) || []).map((entry: any) => (
-                                  <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                                ))}
-                            </Bar>
-                        </RechartsBarChart>
-                    </ChartContainer>
-                </CardContent>
+           {/* Red Flags */}
+          {analysis.redFlags?.length > 0 && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Urgent Red Flags Detected!</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-5 mt-2">
+                  {analysis.redFlags.map((flag, i) => (
+                    <li key={i}><strong>{flag.finding}:</strong> {flag.reasoning}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Analysis Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">{analysis.summaryReport}</p>
+            </CardContent>
+          </Card>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             {/* Data Quality & Risk Score */}
+            <Card>
+              <CardHeader><CardTitle>Assessment Overview</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                  <div>
+                    <Label>Overall Risk Score</Label>
+                    <Progress value={analysis.riskScore} className="h-3" />
+                    <p className="text-sm font-bold text-right">{analysis.riskScore}%</p>
+                  </div>
+                  <div>
+                    <Label>Data Quality Score</Label>
+                    <Progress value={analysis.dataQuality?.score} className="h-3" />
+                     <p className="text-sm font-bold text-right">{analysis.dataQuality?.score}%</p>
+                  </div>
+                  {analysis.dataQuality?.suggestions?.length > 0 && (
+                     <Alert variant="default" className="mt-2">
+                        <AlertTitle>Quality Suggestions</AlertTitle>
+                        <AlertDescription>
+                          <ul className="list-disc pl-4 text-xs">
+                           {analysis.dataQuality.suggestions.map((s,i) => <li key={i}>{s}</li>)}
+                          </ul>
+                        </AlertDescription>
+                     </Alert>
+                  )}
+              </CardContent>
             </Card>
 
-            {analysis.map((item, index) => (
-                 <Card key={index}>
-                    <CardHeader>
-                        <CardTitle className="text-lg text-primary" style={{color: (item as any).fill}}>{item.diagnosis}</CardTitle>
-                        <CardDescription>Confidence: {(item as any).confidence}%</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm">{item.justification}</p>
-                    </CardContent>
-                </Card>
-            ))}
+             {/* Next Steps & Vitals */}
+            <Card>
+              <CardHeader><CardTitle>Recommendations</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                  <div>
+                    <Label>Next Steps</Label>
+                    <p className="text-sm text-muted-foreground p-3 bg-secondary/50 rounded-md">{analysis.nextSteps}</p>
+                  </div>
+                  <div>
+                    <Label>Vitals to Monitor</Label>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {analysis.vitalsToMonitor?.map(vital => <Badge key={vital} variant="secondary">{vital}</Badge>)}
+                    </div>
+                  </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Ranked Diagnostic Analysis */}
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Ranked Diagnostic Analysis</h3>
+            <Accordion type="single" collapsible defaultValue="item-0">
+              {analysis.conditions?.map((condition, index) => (
+                <AccordionItem value={`item-${index}`} key={index}>
+                  <AccordionTrigger>
+                    <div className="flex items-center justify-between w-full pr-4">
+                        <span className="font-semibold text-lg">{condition.name}</span>
+                        <Badge variant={condition.likelihood === 'High' ? 'destructive' : condition.likelihood === 'Medium' ? 'default' : 'outline'}>
+                            {condition.likelihood} Likelihood
+                        </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-2">
+                    <div>
+                      <h4 className="font-semibold">Explanation</h4>
+                      <p className="text-sm text-muted-foreground">{condition.explanation}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Evidence</h4>
+                      <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                        {condition.evidence.map((e, i) => <li key={i}>{e}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Common Medications</h4>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {condition.medications.map(med => <Badge key={med} variant="outline">{med}</Badge>)}
+                      </div>
+                       <p className="text-xs text-muted-foreground mt-2">Disclaimer: Consult a doctor before taking any medication.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Differential Diagnoses</h4>
+                       <p className="text-sm text-muted-foreground">{condition.differentialDiagnoses.join(', ')}</p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+
+          <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Disclaimer</AlertTitle>
+              <AlertDescription>{analysis.disclaimer}</AlertDescription>
+          </Alert>
+
         </motion.div>
       )}
     </div>
   );
 }
+
