@@ -7,13 +7,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
-import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
-import { Loader2, AlertTriangle, Activity, X, ImageIcon } from 'lucide-react';
+import { generateSimpleDiagnoses } from '@/ai/flows/generate-simple-diagnoses';
+import { GenerateDetailedDiagnosesOutput, GenerateSimpleDiagnosesOutput } from '@/ai/types';
+import { Loader2, AlertTriangle, Activity, X, ImageIcon, Stethoscope } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Image from 'next/image';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -39,11 +40,17 @@ type CurrentUser = {
   lastCondition?: string;
 }
 
+// A union type for the analysis result
+type AnalysisResult = 
+  | { type: 'detailed'; data: GenerateDetailedDiagnosesOutput }
+  | { type: 'simple'; data: GenerateSimpleDiagnosesOutput };
+
+
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
   const [description, setDescription] = useState('');
   const [reportDataUri, setReportDataUri] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState<GenerateDetailedDiagnosesOutput | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -97,17 +104,27 @@ export default function DashboardPage() {
     }
   };
 
-  const saveToHistoryAndRecordCondition = (result: GenerateDetailedDiagnosesOutput) => {
+  const saveToHistoryAndRecordCondition = (result: AnalysisResult) => {
     if (!currentUser) return;
-    
-    // Save to general history
+
+    let summary = "No summary available.";
+    let topCondition: string | undefined;
+
+    if (result.type === 'detailed') {
+        summary = result.data.summaryReport || summary;
+        topCondition = result.data.conditions?.[0]?.name;
+    } else { // simple
+        summary = result.data.map(d => `${d.diagnosis}: ${d.justification}`).join('\n') || summary;
+        topCondition = result.data?.[0]?.diagnosis;
+    }
+
     const inputSummary = reportDataUri ? `Report + ${symptoms}` : symptoms;
     const newItem: HistoryItem = {
       id: Date.now(),
       date: new Date().toISOString(),
       inputType: reportDataUri ? 'Report' : 'Symptoms',
       input: inputSummary || "No input provided",
-      result: result.summaryReport || "No summary available.",
+      result: summary,
     };
 
     try {
@@ -120,8 +137,6 @@ export default function DashboardPage() {
         console.error("Failed to save to history:", error);
     }
 
-    // Save the last condition to the user's record
-    const topCondition = result.conditions?.[0]?.name;
     if (topCondition) {
         try {
             const allUsersString = localStorage.getItem('users');
@@ -139,6 +154,7 @@ export default function DashboardPage() {
     }
   };
 
+
   const handleSubmit = async () => {
     if (!symptoms && !reportDataUri && !description) {
       setError("Please enter your symptoms, a description, or upload a report to get an analysis.");
@@ -150,11 +166,20 @@ export default function DashboardPage() {
     setError(null);
 
     try {
-      const result = await generateDetailedDiagnoses({ 
-        symptoms,
-        description,
-        ...(reportDataUri && { reportDataUri }),
-       });
+      let result: AnalysisResult;
+      // If a report is uploaded, use the detailed flow.
+      if (reportDataUri) {
+        const detailedResult = await generateDetailedDiagnoses({ 
+          symptoms,
+          description,
+          reportDataUri,
+        });
+        result = { type: 'detailed', data: detailedResult };
+      } else {
+        // Otherwise, use the simple flow for symptoms only.
+        const simpleResult = await generateSimpleDiagnoses({ symptoms, description });
+        result = { type: 'simple', data: simpleResult };
+      }
       setAnalysis(result);
       saveToHistoryAndRecordCondition(result);
 
@@ -177,6 +202,253 @@ export default function DashboardPage() {
   if (isClient && currentUser?.role === 'clinician') {
     return <ClinicianDashboard />;
   }
+
+  const renderSimpleAnalysis = (data: GenerateSimpleDiagnosesOutput) => (
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="w-full max-w-4xl mt-8 space-y-6"
+    >
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Stethoscope /> Symptom Analysis</CardTitle>
+                <CardDescription>Based on the symptoms you provided, here are some potential diagnoses.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {data.length > 0 ? (
+                    <Accordion type="single" collapsible defaultValue="item-0">
+                        {data.map((diag, index) => (
+                            <AccordionItem value={`item-${index}`} key={index}>
+                                <AccordionTrigger>
+                                    <span className="font-semibold text-lg">{diag.diagnosis}</span>
+                                </AccordionTrigger>
+                                <AccordionContent className="space-y-4 pt-2">
+                                    <div>
+                                        <h4 className="font-semibold">Justification</h4>
+                                        <p className="text-sm text-muted-foreground">{diag.justification}</p>
+                                    </div>
+                                    {diag.medications && diag.medications.length > 0 && (
+                                        <div>
+                                            <h4 className="font-semibold">Common Medications</h4>
+                                            <div className="flex flex-wrap gap-2 pt-1">
+                                                {diag.medications.map(med => <Badge key={med} variant="outline">{med}</Badge>)}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-2">Disclaimer: Consult a doctor before taking any medication.</p>
+                                        </div>
+                                    )}
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                ) : (
+                    <p className="text-muted-foreground">The AI could not determine a diagnosis from the provided symptoms.</p>
+                )}
+            </CardContent>
+        </Card>
+        <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Disclaimer</AlertTitle>
+              <AlertDescription>This is an AI-generated analysis and not a substitute for professional medical advice. Please consult a qualified healthcare provider.</AlertDescription>
+          </Alert>
+    </motion.div>
+  );
+
+  const renderDetailedAnalysis = (data: GenerateDetailedDiagnosesOutput) => (
+      <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="w-full max-w-4xl mt-8 space-y-6"
+        >
+           {/* Red Flags */}
+          {data.redFlags?.length > 0 && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Urgent Red Flags Detected!</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-5 mt-2">
+                  {data.redFlags.map((flag, i) => (
+                    <li key={i}><strong>{flag.finding}:</strong> {flag.reasoning}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Analysis Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">{data.summaryReport}</p>
+            </CardContent>
+          </Card>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             {/* Data Quality & Risk Score */}
+            <Card>
+              <CardHeader><CardTitle>Assessment Overview</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                  <div>
+                    <Label>Overall Risk Score</Label>
+                    <div className="flex items-center gap-2">
+                      <Progress value={data.riskScore} className="h-3 w-full" />
+                      <span className="text-sm font-bold">{data.riskScore}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Data Quality Score</Label>
+                     <div className="flex items-center gap-2">
+                        <Progress value={data.dataQuality?.score} className="h-3 w-full" />
+                        <span className="text-sm font-bold">{data.dataQuality?.score}%</span>
+                    </div>
+                  </div>
+                  {data.dataQuality?.suggestions?.length > 0 && (
+                     <Alert variant="default" className="mt-2">
+                        <AlertTitle className="text-sm">Quality Suggestions</AlertTitle>
+                        <AlertDescription>
+                          <ul className="list-disc pl-4 text-xs">
+                           {data.dataQuality.suggestions.map((s,i) => <li key={i}>{s}</li>)}
+                          </ul>
+                        </AlertDescription>
+                     </Alert>
+                  )}
+              </CardContent>
+            </Card>
+
+             {/* Next Steps & Vitals */}
+            <Card>
+              <CardHeader><CardTitle>Recommendations</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                  <div>
+                    <Label>Next Steps</Label>
+                    <p className="text-sm text-muted-foreground p-3 bg-secondary/50 rounded-md">{data.nextSteps}</p>
+                  </div>
+                  <div>
+                    <Label>Vitals to Monitor</Label>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {data.vitalsToMonitor?.map(vital => <Badge key={vital} variant="secondary">{vital}</Badge>)}
+                    </div>
+                  </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+           {/* Biomarker Analysis */}
+          {data.biomarkerAnalysis && data.biomarkerAnalysis.length > 0 && (
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Key Biomarkers from Report</h3>
+                <div className="space-y-4">
+                    {data.biomarkerAnalysis.map((biomarker, index) => {
+                        const [valStr, normalStr] = [biomarker.value, biomarker.normalRange];
+                        const val = parseFloat(valStr);
+                        const [min, max] = normalStr.split('-').map(parseFloat);
+                        const isNormal = val >= min && val <= max;
+
+                        const chartData = [{
+                            name: biomarker.name,
+                            value: val,
+                            normalMin: min,
+                            normalMax: max
+                        }];
+
+                        return (
+                            <Card key={index} className="overflow-hidden">
+                                <CardHeader>
+                                    <CardTitle className="text-lg">{biomarker.name}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                                    <div className="md:col-span-1 space-y-1">
+                                        <p className="text-xs text-muted-foreground">Your Value</p>
+                                        <p className={`text-3xl font-bold ${!isNormal ? 'text-destructive' : ''}`}>{biomarker.value} <span className="text-lg font-normal text-muted-foreground">{biomarker.unit}</span></p>
+                                        <p className="text-xs text-muted-foreground">Normal Range: {biomarker.normalRange} {biomarker.unit}</p>
+                                    </div>
+                                    <div className="md:col-span-2 h-24">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                                <XAxis type="number" domain={[min * 0.8, max * 1.2]} hide />
+                                                <YAxis type="category" dataKey="name" hide />
+                                                <Tooltip
+                                                    cursor={{ fill: 'transparent' }}
+                                                    content={({ active, payload }) => {
+                                                        if (active && payload && payload.length) {
+                                                            return (
+                                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                                                    <p className="text-sm">{`${payload[0].value} ${biomarker.unit}`}</p>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    }}
+                                                />
+                                                <Bar dataKey="normalMax" stackId="a" fill="hsl(var(--secondary))" radius={[5, 5, 5, 5]} barSize={15} background={{ fill: '#eee', radius: 5 }} />
+                                                <Bar dataKey="value" stackId="b" fill={isNormal ? 'hsl(var(--primary))' : 'hsl(var(--destructive))'} barSize={15} radius={[5, 5, 5, 5]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="md:col-span-3">
+                                         <p className="text-sm pt-2 text-muted-foreground">{biomarker.explanation}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
+                </div>
+            </div>
+          )}
+
+
+          {/* Ranked Diagnostic Analysis */}
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Ranked Diagnostic Analysis</h3>
+            <Accordion type="single" collapsible defaultValue="item-0">
+              {data.conditions?.map((condition, index) => (
+                <AccordionItem value={`item-${index}`} key={index}>
+                  <AccordionTrigger>
+                    <div className="flex items-center justify-between w-full pr-4">
+                        <span className="font-semibold text-lg">{condition.name}</span>
+                        <Badge variant={condition.likelihood === 'High' ? 'destructive' : condition.likelihood === 'Medium' ? 'default' : 'outline'}>
+                            {condition.likelihood} Likelihood
+                        </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-2">
+                    <div>
+                      <h4 className="font-semibold">Explanation</h4>
+                      <p className="text-sm text-muted-foreground">{condition.explanation}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Evidence</h4>
+                      <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                        {condition.evidence.map((e, i) => <li key={i}>{e}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Common Medications</h4>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {condition.medications.map(med => <Badge key={med} variant="outline">{med}</Badge>)}
+                      </div>
+                       <p className="text-xs text-muted-foreground mt-2">Disclaimer: Consult a doctor before taking any medication.</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Differential Diagnoses</h4>
+                       <p className="text-sm text-muted-foreground">{condition.differentialDiagnoses.join(', ')}</p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+
+          <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Disclaimer</AlertTitle>
+              <AlertDescription>{data.disclaimer}</AlertDescription>
+          </Alert>
+
+        </motion.div>
+  );
 
   return (
     <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
@@ -309,199 +581,9 @@ export default function DashboardPage() {
       )}
 
       {analysis && !isLoading && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="w-full max-w-4xl mt-8 space-y-6"
-        >
-           {/* Red Flags */}
-          {analysis.redFlags?.length > 0 && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Urgent Red Flags Detected!</AlertTitle>
-              <AlertDescription>
-                <ul className="list-disc pl-5 mt-2">
-                  {analysis.redFlags.map((flag, i) => (
-                    <li key={i}><strong>{flag.finding}:</strong> {flag.reasoning}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Analysis Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">{analysis.summaryReport}</p>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             {/* Data Quality & Risk Score */}
-            <Card>
-              <CardHeader><CardTitle>Assessment Overview</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                  <div>
-                    <Label>Overall Risk Score</Label>
-                    <div className="flex items-center gap-2">
-                      <Progress value={analysis.riskScore} className="h-3 w-full" />
-                      <span className="text-sm font-bold">{analysis.riskScore}%</span>
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Data Quality Score</Label>
-                     <div className="flex items-center gap-2">
-                        <Progress value={analysis.dataQuality?.score} className="h-3 w-full" />
-                        <span className="text-sm font-bold">{analysis.dataQuality?.score}%</span>
-                    </div>
-                  </div>
-                  {analysis.dataQuality?.suggestions?.length > 0 && (
-                     <Alert variant="default" className="mt-2">
-                        <AlertTitle className="text-sm">Quality Suggestions</AlertTitle>
-                        <AlertDescription>
-                          <ul className="list-disc pl-4 text-xs">
-                           {analysis.dataQuality.suggestions.map((s,i) => <li key={i}>{s}</li>)}
-                          </ul>
-                        </AlertDescription>
-                     </Alert>
-                  )}
-              </CardContent>
-            </Card>
-
-             {/* Next Steps & Vitals */}
-            <Card>
-              <CardHeader><CardTitle>Recommendations</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                  <div>
-                    <Label>Next Steps</Label>
-                    <p className="text-sm text-muted-foreground p-3 bg-secondary/50 rounded-md">{analysis.nextSteps}</p>
-                  </div>
-                  <div>
-                    <Label>Vitals to Monitor</Label>
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {analysis.vitalsToMonitor?.map(vital => <Badge key={vital} variant="secondary">{vital}</Badge>)}
-                    </div>
-                  </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-           {/* Biomarker Analysis */}
-          {analysis.biomarkerAnalysis && analysis.biomarkerAnalysis.length > 0 && (
-            <div>
-              <h3 className="text-xl font-semibold mb-4">Key Biomarkers from Report</h3>
-                <div className="space-y-4">
-                    {analysis.biomarkerAnalysis.map((biomarker, index) => {
-                        const [valStr, normalStr] = [biomarker.value, biomarker.normalRange];
-                        const val = parseFloat(valStr);
-                        const [min, max] = normalStr.split('-').map(parseFloat);
-                        const isNormal = val >= min && val <= max;
-
-                        const data = [{
-                            name: biomarker.name,
-                            value: val,
-                            normalMin: min,
-                            normalMax: max
-                        }];
-
-                        return (
-                            <Card key={index} className="overflow-hidden">
-                                <CardHeader>
-                                    <CardTitle className="text-lg">{biomarker.name}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                                    <div className="md:col-span-1 space-y-1">
-                                        <p className="text-xs text-muted-foreground">Your Value</p>
-                                        <p className={`text-3xl font-bold ${!isNormal ? 'text-destructive' : ''}`}>{biomarker.value} <span className="text-lg font-normal text-muted-foreground">{biomarker.unit}</span></p>
-                                        <p className="text-xs text-muted-foreground">Normal Range: {biomarker.normalRange} {biomarker.unit}</p>
-                                    </div>
-                                    <div className="md:col-span-2 h-24">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                                <XAxis type="number" domain={[min * 0.8, max * 1.2]} hide />
-                                                <YAxis type="category" dataKey="name" hide />
-                                                <Tooltip
-                                                    cursor={{ fill: 'transparent' }}
-                                                    content={({ active, payload }) => {
-                                                        if (active && payload && payload.length) {
-                                                            return (
-                                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                                                    <p className="text-sm">{`${payload[0].value} ${biomarker.unit}`}</p>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    }}
-                                                />
-                                                <Bar dataKey="normalMax" stackId="a" fill="hsl(var(--secondary))" radius={[5, 5, 5, 5]} barSize={15} background={{ fill: '#eee', radius: 5 }} />
-                                                <Bar dataKey="value" stackId="b" fill={isNormal ? 'hsl(var(--primary))' : 'hsl(var(--destructive))'} barSize={15} radius={[5, 5, 5, 5]} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                    <div className="md:col-span-3">
-                                         <p className="text-sm pt-2 text-muted-foreground">{biomarker.explanation}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )
-                    })}
-                </div>
-            </div>
-          )}
-
-
-          {/* Ranked Diagnostic Analysis */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Ranked Diagnostic Analysis</h3>
-            <Accordion type="single" collapsible defaultValue="item-0">
-              {analysis.conditions?.map((condition, index) => (
-                <AccordionItem value={`item-${index}`} key={index}>
-                  <AccordionTrigger>
-                    <div className="flex items-center justify-between w-full pr-4">
-                        <span className="font-semibold text-lg">{condition.name}</span>
-                        <Badge variant={condition.likelihood === 'High' ? 'destructive' : condition.likelihood === 'Medium' ? 'default' : 'outline'}>
-                            {condition.likelihood} Likelihood
-                        </Badge>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <div>
-                      <h4 className="font-semibold">Explanation</h4>
-                      <p className="text-sm text-muted-foreground">{condition.explanation}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Evidence</h4>
-                      <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                        {condition.evidence.map((e, i) => <li key={i}>{e}</li>)}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Common Medications</h4>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {condition.medications.map(med => <Badge key={med} variant="outline">{med}</Badge>)}
-                      </div>
-                       <p className="text-xs text-muted-foreground mt-2">Disclaimer: Consult a doctor before taking any medication.</p>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Differential Diagnoses</h4>
-                       <p className="text-sm text-muted-foreground">{condition.differentialDiagnoses.join(', ')}</p>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
-
-          <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Disclaimer</AlertTitle>
-              <AlertDescription>{analysis.disclaimer}</AlertDescription>
-          </Alert>
-
-        </motion.div>
+        analysis.type === 'detailed' 
+          ? renderDetailedAnalysis(analysis.data)
+          : renderSimpleAnalysis(analysis.data)
       )}
     </div>
   );

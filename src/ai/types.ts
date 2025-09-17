@@ -3,10 +3,10 @@ import {z} from 'genkit';
 
 // From generate-detailed-diagnoses.ts
 export const GenerateDetailedDiagnosesInputSchema = z.object({
-  symptoms: z.string().describe('The key symptoms exhibited by the user (e.g. "Headache").'),
+  symptoms: z.string().optional().describe('The key symptoms exhibited by the user (e.g. "Headache").'),
   description: z.string().optional().describe('A more detailed description of the symptoms.'),
-  reportDataUri: z.string().optional().describe(
-      "An optional medical report, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+  reportDataUri: z.string().describe(
+      "A medical report, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 export type GenerateDetailedDiagnosesInput = z.infer<typeof GenerateDetailedDiagnosesInputSchema>;
@@ -55,9 +55,7 @@ export type GenerateDetailedDiagnosesOutput = z.infer<typeof GenerateDetailedDia
 // From generate-simple-diagnoses.ts
 export const GenerateSimpleDiagnosesInputSchema = z.object({
   symptoms: z.string().describe('The symptoms exhibited by the user.'),
-  reportDataUri: z.string().optional().describe(
-      "An optional medical report, as a data URI that must include a MIME-type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
+  description: z.string().optional().describe('A more detailed description of the symptoms.'),
 });
 export type GenerateSimpleDiagnosesInput = z.infer<typeof GenerateSimpleDiagnosesInputSchema>;
 
@@ -101,3 +99,5 @@ export const QnaChatbotOutputSchema = z.object({
   isFinal: z.boolean().describe('Whether this is the final diagnosis or another question.'),
 });
 export type QnaChatbotOutput = z.infer<typeof QnaChatbotOutputSchema>;
+
+    
