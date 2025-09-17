@@ -11,6 +11,7 @@ import Link from "next/link";
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function SignupPage() {
     const [name, setName] = useState('');
@@ -18,14 +19,15 @@ export default function SignupPage() {
     const [address, setAddress] = useState('');
     const [age, setAge] = useState('');
     const [password, setPassword] = useState('');
+    const [role, setRole] = useState('user');
     const router = useRouter();
     const { toast } = useToast();
 
     const handleCreateAccount = () => {
-        if (!name || !email || !password) {
+        if (!name || !email || !password || !role) {
             toast({
                 title: "Incomplete Form",
-                description: "Please fill out your name, email, and password.",
+                description: "Please fill out all required fields.",
                 variant: "destructive",
             });
             return;
@@ -38,6 +40,7 @@ export default function SignupPage() {
             address,
             age,
             password, // In a real app, this should be hashed!
+            role,
             profilePic: `https://picsum.photos/seed/${Math.random()}/128/128`
         };
 
@@ -96,6 +99,19 @@ export default function SignupPage() {
                 <CardDescription>Join us to start your health journey.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Register as</Label>
+                    <RadioGroup defaultValue="user" value={role} onValueChange={setRole} className="flex space-x-4">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="user" id="r1" />
+                            <Label htmlFor="r1">User</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="clinician" id="r2" />
+                            <Label htmlFor="r2">Clinician</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>

@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera } from 'lucide-react';
+import { Camera, UserCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 type User = {
     id: number;
@@ -16,6 +17,7 @@ type User = {
     email: string;
     age: number | '';
     address: string;
+    role: 'user' | 'clinician';
     profilePic: string;
     password?: string;
 }
@@ -134,6 +136,10 @@ export default function ProfilePage() {
                                 <input id="profile-pic-upload" type="file" className="hidden" accept="image/*" onChange={handleProfilePicChange} />
                             </label>
                         </div>
+                         <Badge variant={currentUser.role === 'clinician' ? 'default' : 'secondary'}>
+                            <UserCircle className="mr-2 h-4 w-4"/>
+                            {currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}
+                        </Badge>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

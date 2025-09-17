@@ -11,10 +11,12 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from "next/link";
 import { useToast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [role, setRole] = useState('user');
     const router = useRouter();
     const { toast } = useToast();
 
@@ -23,7 +25,7 @@ export default function LoginPage() {
             const savedUsers = localStorage.getItem('users');
             if (savedUsers) {
                 const users = JSON.parse(savedUsers);
-                const user = users.find((u: any) => u.email === email);
+                const user = users.find((u: any) => u.email === email && u.role === role);
 
                 if (user && user.password === password) { // In a real app, compare hashed passwords
                     localStorage.setItem('currentUser', JSON.stringify(user));
@@ -35,7 +37,7 @@ export default function LoginPage() {
                 } else {
                      toast({
                         title: "Login Failed",
-                        description: "Invalid email or password.",
+                        description: "Invalid credentials or role.",
                         variant: "destructive",
                     });
                 }
@@ -77,6 +79,19 @@ export default function LoginPage() {
                 <CardDescription>Log in to access your dashboard.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Login as</Label>
+                    <RadioGroup defaultValue="user" value={role} onValueChange={setRole} className="flex space-x-4">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="user" id="r1" />
+                            <Label htmlFor="r1">User</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="clinician" id="r2" />
+                            <Label htmlFor="r2">Clinician</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
