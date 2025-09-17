@@ -20,14 +20,14 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateSimpleDiagnosesOutputSchema},
   prompt: `You are an AI assistant that provides a simple list of possible diagnoses based on user-provided symptoms and/or a medical report.
 
-  Analyze the following information to provide a few likely diagnoses. For each diagnosis, provide a brief justification based on the input.
+  Analyze the following information to provide a few likely diagnoses. For each diagnosis, provide a brief justification based on the input, and a list of common medications.
 
   Symptoms: {{{symptoms}}}
   {{#if reportDataUri}}
   Medical Report: {{media url=reportDataUri}}
   {{/if}}
 
-  Format your output as a JSON array of diagnoses, each with a diagnosis and justification.
+  Format your output as a JSON array of diagnoses, each with a diagnosis, justification, and a list of medications.
   If the input is empty or nonsensical, return an empty array.
   `,
 });

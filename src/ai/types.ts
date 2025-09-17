@@ -64,6 +64,7 @@ export type GenerateSimpleDiagnosesInput = z.infer<typeof GenerateSimpleDiagnose
 const DiagnosisSchema = z.object({
   diagnosis: z.string().describe('The diagnosis.'),
   justification: z.string().describe('The evidence-based justification for the diagnosis.'),
+  medications: z.array(z.string()).optional().describe("A list of common medications for the diagnosis."),
 });
 
 export const GenerateSimpleDiagnosesOutputSchema = z.array(DiagnosisSchema).describe('A list of likely diagnoses with justifications.');
@@ -95,5 +96,3 @@ export const QnaChatbotOutputSchema = z.object({
   isFinal: z.boolean().describe('Whether this is the final diagnosis or another question.'),
 });
 export type QnaChatbotOutput = z.infer<typeof QnaChatbotOutputSchema>;
-
-    

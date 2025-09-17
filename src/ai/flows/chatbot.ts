@@ -39,7 +39,19 @@ const chatbotFlow = ai.defineFlow(
         diagnoses.forEach(d => {
             response += `- **${d.diagnosis}:** ${d.justification}\n`;
         });
-        response += "\nRemember, this is not a medical diagnosis. Please consult a healthcare professional.";
+        
+        const asksForMedicine = query.toLowerCase().includes('medicine') || query.toLowerCase().includes('suggest medicine');
+
+        if (asksForMedicine) {
+            response += "\nHere are some common over-the-counter and prescription medications associated with these conditions. **This is not medical advice. Please consult a doctor before taking any medication.**\n\n";
+            diagnoses.forEach(d => {
+                if (d.medications && d.medications.length > 0) {
+                    response += `- **For ${d.diagnosis}:** ${d.medications.join(', ')}\n`;
+                }
+            });
+        }
+
+        response += "\nRemember, this is not a medical diagnosis. Please consult a healthcare professional for accurate advice.";
         
         return response;
 
