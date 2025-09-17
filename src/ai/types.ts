@@ -56,7 +56,7 @@ export type GenerateDetailedDiagnosesOutput = z.infer<typeof GenerateDetailedDia
 export const GenerateSimpleDiagnosesInputSchema = z.object({
   symptoms: z.string().describe('The symptoms exhibited by the user.'),
   reportDataUri: z.string().optional().describe(
-      "An optional medical report, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "An optional medical report, as a data URI that must include a MIME-type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 export type GenerateSimpleDiagnosesInput = z.infer<typeof GenerateSimpleDiagnosesInputSchema>;
@@ -72,9 +72,14 @@ export type GenerateSimpleDiagnosesOutput = z.infer<typeof GenerateSimpleDiagnos
 
 
 // From chatbot.ts
+const HistoryMessagePartSchema = z.object({
+    text: z.string().optional(),
+    // Add other possible part types if needed, e.g., media
+});
+
 const HistoryMessageSchema = z.object({
     role: z.enum(['user', 'model']),
-    parts: z.array(z.object({text: z.string()})),
+    parts: z.array(HistoryMessagePartSchema),
 });
 
 export const AskChatbotInputSchema = z.object({

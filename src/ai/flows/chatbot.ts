@@ -9,7 +9,7 @@
 import {ai} from '@/ai/genkit';
 import { AskChatbotInputSchema, type AskChatbotInput } from '@/ai/types';
 import { z } from 'genkit';
-import { Message } from 'genkit/cohere';
+import { Message } from '@genkit-ai/googleai';
 
 
 export async function askChatbot(input: AskChatbotInput): Promise<string> {
@@ -41,8 +41,14 @@ const chatbotFlow = ai.defineFlow(
     Be conversational and empathetic.
     `;
 
-    const allHistory: Message[] = [
-      ...(history || []),
+    // Ensure history is correctly typed
+    const typedHistory: Message[] = (history || []).map(h => ({
+      role: h.role,
+      parts: h.parts.map(p => ({ text: p.text || '' }))
+    }));
+
+    const fullHistory: Message[] = [
+      ...typedHistory,
       { role: 'user', parts: [{ text: query }] }
     ];
 
@@ -50,21 +56,20 @@ const chatbotFlow = ai.defineFlow(
         const result = await ai.generate({
             model: 'googleai/gemini-2.5-flash',
             system: systemPrompt,
-            history: allHistory,
+            history: fullHistory,
         });
 
         const text = result.text;
 
         if (!text) {
-             return "Sorry, I'm having trouble processing that. Could you please rephrase your question?";
+             return "I'm sorry, I couldn't generate a response. Could you please rephrase your question?";
         }
 
         return text;
 
     } catch (error) {
         console.error("Chatbot flow failed:", error);
-        return "Sorry, I encountered an error and can't provide a response at the moment. Please try again later.";
+        return "I'm sorry, I encountered an error and can't provide a response right now. Please check your connection or try again later.";
     }
   }
 );
-
