@@ -38,10 +38,10 @@ export default function SignupPage() {
             name,
             email,
             address,
-            age,
+            age: age === '' ? '' : Number(age),
             password, // In a real app, this should be hashed!
             role,
-            profilePic: `https://picsum.photos/seed/${Math.random()}/128/128`
+            profilePic: `https://picsum.photos/seed/${Date.now()}/128/128`
         };
 
         try {
@@ -104,7 +104,7 @@ export default function SignupPage() {
                     <RadioGroup defaultValue="user" value={role} onValueChange={setRole} className="flex space-x-4">
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="user" id="r1" />
-                            <Label htmlFor="r1">User</Label>
+                            <Label htmlFor="r1">Patient</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="clinician" id="r2" />

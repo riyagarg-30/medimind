@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, UserCircle } from 'lucide-react';
+import { Camera, UserCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -19,7 +19,7 @@ type User = {
     address: string;
     role: 'user' | 'clinician';
     profilePic: string;
-    password?: string;
+    password?: string; // This is the hashed password.
 }
 
 export default function ProfilePage() {
@@ -34,8 +34,6 @@ export default function ProfilePage() {
             if (savedDetails) {
                 setCurrentUser(JSON.parse(savedDetails));
             } else {
-                // Handle case where user is not logged in, maybe redirect or show a message.
-                // For now, we'll just log an error.
                 console.error("No current user found in local storage.");
             }
         } catch (error) {
@@ -69,24 +67,38 @@ export default function ProfilePage() {
         if (!currentUser) return;
 
         try {
-            // Update the currentUser in localStorage
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-            // Also update the user's details in the main users array
+            // Get the main users array from localStorage
             const allUsersString = localStorage.getItem('users');
-            if (allUsersString) {
-                let allUsers: User[] = JSON.parse(allUsersString);
-                const userIndex = allUsers.findIndex((u: User) => u.id === currentUser.id);
-                if (userIndex > -1) {
-                    allUsers[userIndex] = currentUser;
-                    localStorage.setItem('users', JSON.stringify(allUsers));
-                }
+            if (!allUsersString) {
+                toast({ title: "Error", description: "User database not found.", variant: "destructive" });
+                return;
+            }
+            
+            let allUsers: User[] = JSON.parse(allUsersString);
+            const userIndex = allUsers.findIndex((u: User) => u.id === currentUser.id);
+
+            if (userIndex > -1) {
+                // IMPORTANT: Preserve the password from the stored user data
+                const updatedUser = {
+                    ...currentUser,
+                    password: allUsers[userIndex].password 
+                };
+
+                // Update the user's details in the main users array
+                allUsers[userIndex] = updatedUser;
+                localStorage.setItem('users', JSON.stringify(allUsers));
+                
+                // Also update the currentUser in localStorage to reflect changes immediately
+                localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+                toast({
+                    title: "Profile Updated",
+                    description: "Your information has been successfully saved.",
+                });
+            } else {
+                 toast({ title: "Error", description: "Could not find your user record to update.", variant: "destructive" });
             }
 
-            toast({
-                title: "Profile Updated",
-                description: "Your information has been successfully saved.",
-            });
         } catch (error) {
             console.error("Failed to save user details to local storage", error);
             toast({
@@ -98,17 +110,11 @@ export default function ProfilePage() {
     };
 
     if (!isClient || !currentUser) {
-        // You can return a loader here
         return (
             <div className="p-4 md:p-8 flex justify-center items-start">
-                <Card className="w-full max-w-2xl">
-                    <CardHeader>
-                        <CardTitle>Personal Information</CardTitle>
-                        <CardDescription>
-                            Loading your personal details...
-                        </CardDescription>
-                    </CardHeader>
-                </Card>
+                 <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                </div>
             </div>
         );
     }

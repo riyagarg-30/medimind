@@ -13,6 +13,17 @@ import Link from "next/link";
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+type User = {
+    id: number;
+    name: string;
+    email: string;
+    age: number | '';
+    address: string;
+    role: 'user' | 'clinician';
+    profilePic: string;
+    password?: string;
+}
+
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -23,28 +34,29 @@ export default function LoginPage() {
     const handleLogin = () => {
         try {
             const savedUsers = localStorage.getItem('users');
-            if (savedUsers) {
-                const users = JSON.parse(savedUsers);
-                const user = users.find((u: any) => u.email === email && u.role === role);
-
-                if (user && user.password === password) { // In a real app, compare hashed passwords
-                    localStorage.setItem('currentUser', JSON.stringify(user));
-                    toast({
-                        title: "Login Successful",
-                        description: `Welcome back, ${user.name}!`,
-                    });
-                    router.push('/dashboard');
-                } else {
-                     toast({
-                        title: "Login Failed",
-                        description: "Invalid credentials or role.",
-                        variant: "destructive",
-                    });
-                }
-            } else {
+            if (!savedUsers) {
                 toast({
+                    title: "No Accounts Found",
+                    description: "There are no user accounts in the system. Please sign up.",
+                    variant: "destructive",
+                });
+                return;
+            }
+            
+            const users: User[] = JSON.parse(savedUsers);
+            const user = users.find((u) => u.email === email && u.role === role);
+
+            if (user && user.password === password) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                toast({
+                    title: "Login Successful",
+                    description: `Welcome back, ${user.name}!`,
+                });
+                router.push('/dashboard');
+            } else {
+                 toast({
                     title: "Login Failed",
-                    description: "No accounts found. Please sign up to create an account.",
+                    description: "Invalid email, password, or role.",
                     variant: "destructive",
                 });
             }
