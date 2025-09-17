@@ -4,11 +4,12 @@
 import { useState, useRef, useEffect, FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Bot, User, Loader2 } from 'lucide-react';
+import { Bot, User, Loader2, WifiOff } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { askChatbot } from '@/ai/flows/chatbot';
 import { Part } from 'genkit/cohere';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type Message = {
     role: 'user' | 'model';
@@ -27,8 +28,30 @@ export default function ChatbotPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isOffline, setIsOffline] = useState(false);
 
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // Function to update online status
+        const updateOnlineStatus = () => {
+            setIsOffline(!navigator.onLine);
+        };
+
+        // Add event listeners for online/offline events
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        // Initial check
+        updateOnlineStatus();
+
+        // Cleanup listeners on component unmount
+        return () => {
+            window.removeEventListener('online', updateOnlineStatus);
+            window.removeEventListener('offline', updateOnlineStatus);
+        };
+    }, []);
+
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -64,6 +87,11 @@ export default function ChatbotPage() {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
 
+        if (isOffline) {
+            setMessages(prevMessages => [...prevMessages, { role: 'model', parts: [{ text: "You appear to be offline. Please check your connection and try again." }] }]);
+            return;
+        }
+
         const userMessage = input;
         const newMessages: Message[] = [...messages, { role: 'user', parts: [{ text: userMessage }] }];
         setMessages(newMessages);
@@ -95,6 +123,15 @@ export default function ChatbotPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+                    {isOffline && (
+                        <Alert variant="destructive">
+                            <WifiOff className="h-4 w-4" />
+                            <AlertTitle>You are currently offline</AlertTitle>
+                            <AlertDescription>
+                                Chat functionality is disabled. Please reconnect to the internet.
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     <ScrollArea className="flex-1 p-4 border rounded-lg bg-secondary/30" ref={scrollAreaRef}>
                         <div className="space-y-4">
                             {messages.map((msg, index) => (
@@ -140,9 +177,9 @@ export default function ChatbotPage() {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Type your symptoms here..."
                             className="flex-1"
-                            disabled={isLoading}
+                            disabled={isLoading || isOffline}
                         />
-                        <Button type="submit" disabled={isLoading || !input.trim()}>
+                        <Button type="submit" disabled={isLoading || !input.trim() || isOffline}>
                             Send
                         </Button>
                     </form>
