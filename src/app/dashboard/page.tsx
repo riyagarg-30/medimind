@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
-import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
-import { Loader2, AlertTriangle, Activity, X, ImageIcon, Stethoscope } from 'lucide-react';
+import { generateSimpleDiagnoses } from '@/ai/flows/generate-simple-diagnoses';
+import { GenerateDetailedDiagnosesOutput, GenerateSimpleDiagnosesOutput } from '@/ai/types';
+import { Loader2, AlertTriangle, Activity, X, ImageIcon, Stethoscope, FileText, HeartPulse } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
 import { Label } from '@/components/ui/label';
@@ -44,6 +45,7 @@ export default function DashboardPage() {
   const [description, setDescription] = useState('');
   const [reportDataUri, setReportDataUri] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<GenerateDetailedDiagnosesOutput | null>(null);
+  const [simpleAnalysis, setSimpleAnalysis] = useState<GenerateSimpleDiagnosesOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -97,11 +99,22 @@ export default function DashboardPage() {
     }
   };
 
-  const saveToHistoryAndRecordCondition = (analysisResult: GenerateDetailedDiagnosesOutput) => {
+  const saveToHistoryAndRecordCondition = (analysisResult: GenerateDetailedDiagnosesOutput | GenerateSimpleDiagnosesOutput) => {
     if (!currentUser) return;
 
-    const summary = analysisResult.summaryReport;
-    const topCondition = analysisResult.conditions?.[0]?.name;
+    let summary: string;
+    let topCondition: string | undefined;
+
+    if (Array.isArray(analysisResult)) {
+        // Simple Analysis
+        summary = analysisResult.map(a => a.diagnosis).join(', ');
+        topCondition = analysisResult[0]?.diagnosis;
+    } else {
+        // Detailed Analysis
+        summary = analysisResult.summaryReport;
+        topCondition = analysisResult.conditions?.[0]?.name;
+    }
+
 
     const newItem: HistoryItem = {
       id: Date.now(),
@@ -140,23 +153,33 @@ export default function DashboardPage() {
 
 
   const handleSubmit = async () => {
-    if (!reportDataUri) {
-      setError("Please upload a medical report to get an analysis.");
+    if (!symptoms && !reportDataUri) {
+      setError("Please enter symptoms or upload a medical report to get an analysis.");
       return;
     }
 
     setIsLoading(true);
     setAnalysis(null);
+    setSimpleAnalysis(null);
     setError(null);
 
     try {
-      const result = await generateDetailedDiagnoses({ 
-        symptoms,
-        description,
-        reportDataUri,
-      });
-      setAnalysis(result);
-      saveToHistoryAndRecordCondition(result);
+      if (reportDataUri) {
+         const result = await generateDetailedDiagnoses({ 
+            symptoms,
+            description,
+            reportDataUri,
+          });
+          setAnalysis(result);
+          saveToHistoryAndRecordCondition(result);
+      } else {
+          const result = await generateSimpleDiagnoses({
+            symptoms,
+            description,
+          });
+          setSimpleAnalysis(result);
+          saveToHistoryAndRecordCondition(result);
+      }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred. Please try again.");
     } finally {
@@ -191,38 +214,40 @@ export default function DashboardPage() {
       >
         <Card className="transition-all hover:shadow-lg">
           <CardHeader>
-            <CardTitle>AI-Powered Diagnostic Analysis</CardTitle>
+            <CardTitle>Symptom & Report Analysis</CardTitle>
             <CardDescription>
-              Enter symptoms, a detailed description, and upload a medical report for a comprehensive analysis.
+              Enter symptoms for a basic analysis, or upload a medical report for a detailed one.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="symptoms">Key Symptoms (Optional, e.g., "Headache")</Label>
-              <Input
-                  id="symptoms"
-                  placeholder="e.g. 'Fever and Cough'"
-                  value={symptoms}
-                  onChange={(e) => setSymptoms(e.target.value)}
-              />
-            </div>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="symptoms">Key Symptoms (e.g., "Headache")</Label>
+                <Input
+                    id="symptoms"
+                    placeholder="e.g. 'Fever and Cough'"
+                    value={symptoms}
+                    onChange={(e) => setSymptoms(e.target.value)}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Detailed Description (Optional)</Label>
-              <Textarea
-                  id="description"
-                  placeholder="e.g. 'I have a high fever, a persistent dry cough, and I've been feeling extremely tired for the past three days.'"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="description">Detailed Description (Optional)</Label>
+                <Textarea
+                    id="description"
+                    placeholder="e.g. 'I have a high fever, a persistent dry cough, and I've been feeling extremely tired for the past three days.'"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                />
+              </div>
             </div>
             
             <div className="space-y-2">
-              <Label>Upload Medical Report</Label>
+              <Label>Upload Medical Report (Optional)</Label>
               <div 
                 className={cn(
-                  "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+                  "relative flex flex-col items-center justify-center w-full h-full min-h-[170px] border-2 border-dashed rounded-lg cursor-pointer transition-colors",
                   isDragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
                 )}
                 onDragOver={handleDragOver}
@@ -242,7 +267,8 @@ export default function DashboardPage() {
                     {reportDataUri.startsWith('data:image') ? (
                         <Image src={reportDataUri} alt="Report preview" width={128} height={128} className="rounded-md object-cover h-32 w-32" />
                     ): (
-                        <div className="text-center text-muted-foreground p-4">
+                         <div className="text-center text-muted-foreground p-4 flex flex-col items-center gap-2">
+                            <FileText className="h-10 w-10" />
                             <p>PDF report uploaded</p>
                         </div>
                     )}
@@ -274,7 +300,7 @@ export default function DashboardPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={handleSubmit} disabled={isLoading || !reportDataUri}>
+            <Button onClick={handleSubmit} disabled={isLoading || (!symptoms && !reportDataUri)}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity />}
                 Run Analysis
             </Button>
@@ -304,6 +330,43 @@ export default function DashboardPage() {
                 </AlertDescription>
             </Alert>
         </motion.div>
+      )}
+
+      {simpleAnalysis && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="w-full max-w-4xl mt-8"
+          >
+              <Card>
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><HeartPulse/> Simple Diagnosis</CardTitle>
+                      <CardDescription>Based on your symptoms, here are some possibilities. Please consult a doctor.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                      {simpleAnalysis.map((diag, index) => (
+                          <div key={index} className="p-4 border rounded-lg bg-secondary/30">
+                              <h3 className="font-semibold text-lg">{diag.diagnosis}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">{diag.justification}</p>
+                              {diag.medications && diag.medications.length > 0 && (
+                                  <div className="mt-3">
+                                      <h4 className="text-xs font-semibold uppercase text-muted-foreground">Common Medications</h4>
+                                      <div className="flex flex-wrap gap-2 mt-1">
+                                          {diag.medications.map(med => <Badge key={med} variant="outline">{med}</Badge>)}
+                                      </div>
+                                  </div>
+                              )}
+                          </div>
+                      ))}
+                       <Alert>
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Disclaimer</AlertTitle>
+                            <AlertDescription>This is an AI-generated analysis and not a substitute for professional medical advice. Please consult a qualified healthcare provider.</AlertDescription>
+                        </Alert>
+                  </CardContent>
+              </Card>
+          </motion.div>
       )}
 
       {analysis && !isLoading && (
@@ -504,3 +567,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

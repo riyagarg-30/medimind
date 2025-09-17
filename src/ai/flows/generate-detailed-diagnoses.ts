@@ -21,7 +21,9 @@ const prompt = ai.definePrompt({
 
   Analyze the user's uploaded medical report. You should also consider the optional symptoms and description for context. Perform OCR and extract all specific medical data, values, and clinical notes from the report.
 
+  {{#if reportDataUri}}
   Medical Report: {{media url=reportDataUri}}
+  {{/if}}
   {{#if symptoms}}
   Symptoms: {{{symptoms}}}
   {{/if}}
@@ -82,3 +84,4 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     }
   }
 );
+

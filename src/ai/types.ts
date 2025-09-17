@@ -5,7 +5,7 @@ import {z} from 'genkit';
 export const GenerateDetailedDiagnosesInputSchema = z.object({
   symptoms: z.string().optional().describe('The key symptoms exhibited by the user (e.g. "Headache").'),
   description: z.string().optional().describe('A more detailed description of the symptoms.'),
-  reportDataUri: z.string().describe(
+  reportDataUri: z.string().optional().describe(
       "A medical report, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
@@ -50,6 +50,23 @@ export const GenerateDetailedDiagnosesOutputSchema = z.object({
     disclaimer: z.string().describe("A mandatory disclaimer stating that this is an AI-generated analysis and not a substitute for professional medical advice."),
 });
 export type GenerateDetailedDiagnosesOutput = z.infer<typeof GenerateDetailedDiagnosesOutputSchema>;
+
+
+// From generate-simple-diagnoses.ts
+export const GenerateSimpleDiagnosesInputSchema = z.object({
+  symptoms: z.string().describe('The key symptoms exhibited by the user (e.g. "Headache").'),
+  description: z.string().optional().describe('A more detailed description of the symptoms.'),
+});
+export type GenerateSimpleDiagnosesInput = z.infer<typeof GenerateSimpleDiagnosesInputSchema>;
+
+const SimpleDiagnosisSchema = z.object({
+  diagnosis: z.string().describe("The name of the possible medical condition."),
+  justification: z.string().describe("A brief justification for why this diagnosis is possible based on the provided symptoms."),
+  medications: z.array(z.string()).optional().describe("A list of common medications for this condition."),
+});
+
+export const GenerateSimpleDiagnosesOutputSchema = z.array(SimpleDiagnosisSchema);
+export type GenerateSimpleDiagnosesOutput = z.infer<typeof GenerateSimpleDiagnosesOutputSchema>;
 
 
 // From chatbot.ts
