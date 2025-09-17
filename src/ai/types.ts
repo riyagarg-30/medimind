@@ -3,7 +3,8 @@ import {z} from 'genkit';
 
 // From generate-detailed-diagnoses.ts
 export const GenerateDetailedDiagnosesInputSchema = z.object({
-  symptoms: z.string().describe('The symptoms exhibited by the user.'),
+  symptoms: z.string().describe('The key symptoms exhibited by the user (e.g. "Headache").'),
+  description: z.string().optional().describe('A more detailed description of the symptoms.'),
   reportDataUri: z.string().optional().describe(
       "An optional medical report, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
@@ -94,3 +95,5 @@ export const QnaChatbotOutputSchema = z.object({
   isFinal: z.boolean().describe('Whether this is the final diagnosis or another question.'),
 });
 export type QnaChatbotOutput = z.infer<typeof QnaChatbotOutputSchema>;
+
+    

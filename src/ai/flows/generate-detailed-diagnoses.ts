@@ -19,9 +19,12 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateDetailedDiagnosesOutputSchema},
   prompt: `You are an expert medical AI assistant. Your purpose is to provide a detailed, structured, traceable, and explainable preliminary diagnosis.
 
-  Analyze the user's symptoms and/or uploaded medical report. If a report is provided, perform OCR and extract all specific medical data, values, and clinical notes.
+  Analyze the user's symptoms, optional description, and/or uploaded medical report. If a report is provided, perform OCR and extract all specific medical data, values, and clinical notes.
 
   Symptoms: {{{symptoms}}}
+  {{#if description}}
+  Description: {{{description}}}
+  {{/if}}
   {{#if reportDataUri}}
   Medical Report: {{media url=reportDataUri}}
   {{/if}}
@@ -78,8 +81,8 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     outputSchema: GenerateDetailedDiagnosesOutputSchema,
   },
   async input => {
-    if (!input.symptoms && !input.reportDataUri) {
-        throw new Error("Please provide symptoms and/or a medical report for analysis.");
+    if (!input.symptoms && !input.reportDataUri && !input.description) {
+        throw new Error("Please provide symptoms, a description, and/or a medical report for analysis.");
     }
     
     try {
@@ -96,3 +99,5 @@ const generateDetailedDiagnosesFlow = ai.defineFlow(
     }
   }
 );
+
+    

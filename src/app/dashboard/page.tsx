@@ -1,29 +1,31 @@
 
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, DragEvent } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
 import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
-import { Loader2, AlertTriangle, Activity, Upload, X, FileText } from 'lucide-react';
+import { Loader2, AlertTriangle, Activity, Upload, X, FileText, Image as ImageIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
-import { ChartConfig, ChartContainer } from '@/components/ui/chart';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Image from 'next/image';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
+  const [description, setDescription] = useState('');
   const [reportDataUri, setReportDataUri] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<GenerateDetailedDiagnosesOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,9 +39,32 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+       const reader = new FileReader();
+      reader.onload = (e) => {
+        setReportDataUri(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!symptoms && !reportDataUri) {
-      setError("Please enter your symptoms or upload a report to get an analysis.");
+    if (!symptoms && !reportDataUri && !description) {
+      setError("Please enter your symptoms, a description, or upload a report to get an analysis.");
       return;
     }
 
@@ -50,6 +75,7 @@ export default function DashboardPage() {
     try {
       const result = await generateDetailedDiagnoses({ 
         symptoms,
+        description,
         ...(reportDataUri && { reportDataUri }),
        });
       setAnalysis(result);
@@ -60,12 +86,6 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  const getProgressColor = (value: number) => {
-    if (value < 40) return 'bg-green-500';
-    if (value < 70) return 'bg-yellow-500';
-    return 'bg-red-500';
   };
 
   return (
@@ -80,53 +100,79 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle>AI-Powered Diagnostic Analysis</CardTitle>
             <CardDescription>
-              Enter your symptoms and/or upload a medical report (e.g., blood test, imaging) for a detailed analysis.
+              Enter symptoms, a detailed description, and/or upload a medical report for a comprehensive analysis.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="symptoms">Describe your symptoms</Label>
-              <Textarea
+              <Label htmlFor="symptoms">Key Symptoms (e.g., "Headache")</Label>
+              <Input
                   id="symptoms"
-                  placeholder="e.g. 'I have a high fever, a persistent dry cough, and I've been feeling extremely tired for the past three days.'"
+                  placeholder="e.g. 'Fever and Cough'"
                   value={symptoms}
                   onChange={(e) => setSymptoms(e.target.value)}
-                  rows={4}
               />
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="description">Detailed Description (Optional)</Label>
+              <Textarea
+                  id="description"
+                  placeholder="e.g. 'I have a high fever, a persistent dry cough, and I've been feeling extremely tired for the past three days.'"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+              />
+            </div>
+            
+            <div className="space-y-2">
               <Label>Upload Medical Report (Optional)</Label>
-              <div className="flex items-center gap-4">
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="mr-2" />
-                  Upload Image
-                </Button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept="image/png, image/jpeg, image/webp"
-                />
-                {reportDataUri && (
+              <div 
+                className={cn(
+                  "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+                  isDragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                )}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/png, image/jpeg, image/webp"
+                  />
+                {reportDataUri ? (
                   <div className="relative group">
-                    <Image src={reportDataUri} alt="Report preview" width={48} height={48} className="rounded-md object-cover" />
+                    <Image src={reportDataUri} alt="Report preview" width={128} height={128} className="rounded-md object-cover h-32 w-32" />
                     <Button
                       variant="destructive"
                       size="icon"
                       className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => setReportDataUri(null)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReportDataUri(null);
+                      }}
                     >
                       <X className="h-4 w-4" />
                     </Button>
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    <ImageIcon className="mx-auto h-12 w-12" />
+                    <p className="mt-2 text-sm">
+                      <span className="font-semibold text-primary">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs">PNG, JPG or WEBP</p>
                   </div>
                 )}
               </div>
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={handleSubmit} disabled={isLoading || (!symptoms && !reportDataUri)}>
+            <Button onClick={handleSubmit} disabled={isLoading || (!symptoms && !reportDataUri && !description)}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity />}
                 Run Analysis
             </Button>
@@ -239,7 +285,7 @@ export default function DashboardPage() {
           {analysis.biomarkerAnalysis && analysis.biomarkerAnalysis.length > 0 && (
             <div>
               <h3 className="text-xl font-semibold mb-4">Key Biomarkers from Report</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {analysis.biomarkerAnalysis.map((biomarker, index) => (
                   <Card key={index}>
                     <CardHeader>
@@ -318,3 +364,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
