@@ -22,8 +22,6 @@ const prompt = ai.definePrompt({
 
   Analyze the following information to provide a few likely diagnoses. For each diagnosis, provide a brief justification based on the input.
 
-  Do not provide confidence scores. This is a simple analysis.
-
   Symptoms: {{{symptoms}}}
   {{#if reportDataUri}}
   Medical Report: {{media url=reportDataUri}}
