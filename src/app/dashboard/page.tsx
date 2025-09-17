@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useRef, DragEvent } from 'react';
+import { useState, useRef, DragEvent, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
 import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
-import { Loader2, AlertTriangle, Activity, X, ImageIcon, Smile } from 'lucide-react';
+import { Loader2, AlertTriangle, Activity, X, ImageIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ import Image from 'next/image';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ClinicianDashboard } from '@/components/clinician-dashboard';
 
 type HistoryItem = {
     id: number;
@@ -26,6 +27,16 @@ type HistoryItem = {
     input: string;
     result: string;
 };
+
+type CurrentUser = {
+  id: number;
+  name: string;
+  email: string;
+  age: number | '';
+  address: string;
+  role: 'user' | 'clinician';
+  profilePic: string;
+}
 
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
@@ -36,6 +47,20 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+   useEffect(() => {
+    setIsClient(true);
+    try {
+      const userStr = localStorage.getItem('currentUser');
+      if (userStr) {
+        setCurrentUser(JSON.parse(userStr));
+      }
+    } catch (error) {
+      console.error("Failed to load current user from local storage", error);
+    }
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -122,6 +147,18 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   };
+
+  if (!isClient) {
+    return (
+        <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
+
+  if (isClient && currentUser?.role === 'clinician') {
+    return <ClinicianDashboard />;
+  }
 
   return (
     <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
@@ -451,3 +488,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
