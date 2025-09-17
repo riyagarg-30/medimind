@@ -7,8 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateDetailedDiagnoses } from '@/ai/flows/generate-detailed-diagnoses';
-import { generateSimpleDiagnoses } from '@/ai/flows/generate-simple-diagnoses';
-import { GenerateDetailedDiagnosesOutput, GenerateSimpleDiagnosesOutput } from '@/ai/types';
+import { GenerateDetailedDiagnosesOutput } from '@/ai/types';
 import { Loader2, AlertTriangle, Activity, X, ImageIcon, Stethoscope } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from 'framer-motion';
@@ -40,17 +39,11 @@ type CurrentUser = {
   lastCondition?: string;
 }
 
-// A union type for the analysis result
-type AnalysisResult = 
-  | { type: 'detailed'; data: GenerateDetailedDiagnosesOutput }
-  | { type: 'simple'; data: GenerateSimpleDiagnosesOutput };
-
-
 export default function DashboardPage() {
   const [symptoms, setSymptoms] = useState('');
   const [description, setDescription] = useState('');
   const [reportDataUri, setReportDataUri] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [analysis, setAnalysis] = useState<GenerateDetailedDiagnosesOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -104,27 +97,18 @@ export default function DashboardPage() {
     }
   };
 
-  const saveToHistoryAndRecordCondition = (result: AnalysisResult) => {
+  const saveToHistoryAndRecordCondition = (analysisResult: GenerateDetailedDiagnosesOutput) => {
     if (!currentUser) return;
 
-    let summary = "No summary available.";
-    let topCondition: string | undefined;
+    const summary = analysisResult.summaryReport;
+    const topCondition = analysisResult.conditions?.[0]?.name;
 
-    if (result.type === 'detailed') {
-        summary = result.data.summaryReport || summary;
-        topCondition = result.data.conditions?.[0]?.name;
-    } else { // simple
-        summary = result.data.map(d => `${d.diagnosis}: ${d.justification}`).join('\n') || summary;
-        topCondition = result.data?.[0]?.diagnosis;
-    }
-
-    const inputSummary = reportDataUri ? `Report + ${symptoms}` : symptoms;
     const newItem: HistoryItem = {
       id: Date.now(),
       date: new Date().toISOString(),
       inputType: reportDataUri ? 'Report' : 'Symptoms',
-      input: inputSummary || "No input provided",
-      result: summary,
+      input: reportDataUri ? `Report + ${symptoms}` : symptoms,
+      result: summary || "No summary available.",
     };
 
     try {
@@ -156,8 +140,8 @@ export default function DashboardPage() {
 
 
   const handleSubmit = async () => {
-    if (!symptoms && !reportDataUri && !description) {
-      setError("Please enter your symptoms, a description, or upload a report to get an analysis.");
+    if (!reportDataUri) {
+      setError("Please upload a medical report to get an analysis.");
       return;
     }
 
@@ -166,25 +150,14 @@ export default function DashboardPage() {
     setError(null);
 
     try {
-      let result: AnalysisResult;
-      // If a report is uploaded, use the detailed flow.
-      if (reportDataUri) {
-        const detailedResult = await generateDetailedDiagnoses({ 
-          symptoms,
-          description,
-          reportDataUri,
-        });
-        result = { type: 'detailed', data: detailedResult };
-      } else {
-        // Otherwise, use the simple flow for symptoms only.
-        const simpleResult = await generateSimpleDiagnoses({ symptoms, description });
-        result = { type: 'simple', data: simpleResult };
-      }
+      const result = await generateDetailedDiagnoses({ 
+        symptoms,
+        description,
+        reportDataUri,
+      });
       setAnalysis(result);
       saveToHistoryAndRecordCondition(result);
-
     } catch (err: any) {
-      console.error("Analysis failed:", err);
       setError(err.message || "An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
@@ -203,72 +176,151 @@ export default function DashboardPage() {
     return <ClinicianDashboard />;
   }
 
-  const renderSimpleAnalysis = (data: GenerateSimpleDiagnosesOutput) => (
-    <motion.div
+  return (
+    <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
+       <div className="w-full max-w-4xl text-center">
+            <h1 className="text-4xl font-bold text-primary mb-12 flex items-center justify-center gap-3">
+                How are you feeling today? 👼
+            </h1>
+      </div>
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="w-full max-w-4xl mt-8 space-y-6"
-    >
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Stethoscope /> Symptom Analysis</CardTitle>
-                <CardDescription>Based on the symptoms you provided, here are some potential diagnoses.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {data.length > 0 ? (
-                    <Accordion type="single" collapsible defaultValue="item-0">
-                        {data.map((diag, index) => (
-                            <AccordionItem value={`item-${index}`} key={index}>
-                                <AccordionTrigger>
-                                    <span className="font-semibold text-lg">{diag.diagnosis}</span>
-                                </AccordionTrigger>
-                                <AccordionContent className="space-y-4 pt-2">
-                                    <div>
-                                        <h4 className="font-semibold">Justification</h4>
-                                        <p className="text-sm text-muted-foreground">{diag.justification}</p>
-                                    </div>
-                                    {diag.medications && diag.medications.length > 0 && (
-                                        <div>
-                                            <h4 className="font-semibold">Common Medications</h4>
-                                            <div className="flex flex-wrap gap-2 pt-1">
-                                                {diag.medications.map(med => <Badge key={med} variant="outline">{med}</Badge>)}
-                                            </div>
-                                            <p className="text-xs text-muted-foreground mt-2">Disclaimer: Consult a doctor before taking any medication.</p>
-                                        </div>
-                                    )}
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
-                ) : (
-                    <p className="text-muted-foreground">The AI could not determine a diagnosis from the provided symptoms.</p>
-                )}
-            </CardContent>
-        </Card>
-        <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Disclaimer</AlertTitle>
-              <AlertDescription>This is an AI-generated analysis and not a substitute for professional medical advice. Please consult a qualified healthcare provider.</AlertDescription>
-          </Alert>
-    </motion.div>
-  );
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-4xl"
+      >
+        <Card className="transition-all hover:shadow-lg">
+          <CardHeader>
+            <CardTitle>AI-Powered Diagnostic Analysis</CardTitle>
+            <CardDescription>
+              Enter symptoms, a detailed description, and upload a medical report for a comprehensive analysis.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="symptoms">Key Symptoms (Optional, e.g., "Headache")</Label>
+              <Input
+                  id="symptoms"
+                  placeholder="e.g. 'Fever and Cough'"
+                  value={symptoms}
+                  onChange={(e) => setSymptoms(e.target.value)}
+              />
+            </div>
 
-  const renderDetailedAnalysis = (data: GenerateDetailedDiagnosesOutput) => (
-      <motion.div
+            <div className="space-y-2">
+              <Label htmlFor="description">Detailed Description (Optional)</Label>
+              <Textarea
+                  id="description"
+                  placeholder="e.g. 'I have a high fever, a persistent dry cough, and I've been feeling extremely tired for the past three days.'"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Upload Medical Report</Label>
+              <div 
+                className={cn(
+                  "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+                  isDragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+                )}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/png, image/jpeg, image/webp, application/pdf"
+                  />
+                {reportDataUri ? (
+                  <div className="relative group">
+                    {reportDataUri.startsWith('data:image') ? (
+                        <Image src={reportDataUri} alt="Report preview" width={128} height={128} className="rounded-md object-cover h-32 w-32" />
+                    ): (
+                        <div className="text-center text-muted-foreground p-4">
+                            <p>PDF report uploaded</p>
+                        </div>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReportDataUri(null);
+                        if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                        }
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground">
+                    <ImageIcon className="mx-auto h-12 w-12" />
+                    <p className="mt-2 text-sm">
+                      <span className="font-semibold text-primary">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs">PNG, JPG, WEBP, or PDF</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSubmit} disabled={isLoading || !reportDataUri}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity />}
+                Run Analysis
+            </Button>
+          </CardFooter>
+        </Card>
+      </motion.div>
+
+      {isLoading && (
+          <div className="w-full max-w-4xl mt-8 flex flex-col items-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">AI is analyzing your data... please wait.</p>
+          </div>
+      )}
+
+      {error && (
+         <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="w-full max-w-4xl mt-8"
+        >
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Analysis Failed</AlertTitle>
+                <AlertDescription>
+                    {error}
+                </AlertDescription>
+            </Alert>
+        </motion.div>
+      )}
+
+      {analysis && !isLoading && (
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
           className="w-full max-w-4xl mt-8 space-y-6"
         >
            {/* Red Flags */}
-          {data.redFlags?.length > 0 && (
+          {analysis.redFlags?.length > 0 && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Urgent Red Flags Detected!</AlertTitle>
               <AlertDescription>
                 <ul className="list-disc pl-5 mt-2">
-                  {data.redFlags.map((flag, i) => (
+                  {analysis.redFlags.map((flag, i) => (
                     <li key={i}><strong>{flag.finding}:</strong> {flag.reasoning}</li>
                   ))}
                 </ul>
@@ -281,7 +333,7 @@ export default function DashboardPage() {
               <CardTitle>Analysis Summary</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">{data.summaryReport}</p>
+              <p className="text-muted-foreground">{analysis.summaryReport}</p>
             </CardContent>
           </Card>
           
@@ -293,23 +345,23 @@ export default function DashboardPage() {
                   <div>
                     <Label>Overall Risk Score</Label>
                     <div className="flex items-center gap-2">
-                      <Progress value={data.riskScore} className="h-3 w-full" />
-                      <span className="text-sm font-bold">{data.riskScore}%</span>
+                      <Progress value={analysis.riskScore} className="h-3 w-full" />
+                      <span className="text-sm font-bold">{analysis.riskScore}%</span>
                     </div>
                   </div>
                   <div>
                     <Label>Data Quality Score</Label>
                      <div className="flex items-center gap-2">
-                        <Progress value={data.dataQuality?.score} className="h-3 w-full" />
-                        <span className="text-sm font-bold">{data.dataQuality?.score}%</span>
+                        <Progress value={analysis.dataQuality?.score} className="h-3 w-full" />
+                        <span className="text-sm font-bold">{analysis.dataQuality?.score}%</span>
                     </div>
                   </div>
-                  {data.dataQuality?.suggestions?.length > 0 && (
+                  {analysis.dataQuality?.suggestions?.length > 0 && (
                      <Alert variant="default" className="mt-2">
                         <AlertTitle className="text-sm">Quality Suggestions</AlertTitle>
                         <AlertDescription>
                           <ul className="list-disc pl-4 text-xs">
-                           {data.dataQuality.suggestions.map((s,i) => <li key={i}>{s}</li>)}
+                           {analysis.dataQuality.suggestions.map((s,i) => <li key={i}>{s}</li>)}
                           </ul>
                         </AlertDescription>
                      </Alert>
@@ -323,12 +375,12 @@ export default function DashboardPage() {
               <CardContent className="space-y-4">
                   <div>
                     <Label>Next Steps</Label>
-                    <p className="text-sm text-muted-foreground p-3 bg-secondary/50 rounded-md">{data.nextSteps}</p>
+                    <p className="text-sm text-muted-foreground p-3 bg-secondary/50 rounded-md">{analysis.nextSteps}</p>
                   </div>
                   <div>
                     <Label>Vitals to Monitor</Label>
                     <div className="flex flex-wrap gap-2 pt-2">
-                      {data.vitalsToMonitor?.map(vital => <Badge key={vital} variant="secondary">{vital}</Badge>)}
+                      {analysis.vitalsToMonitor?.map(vital => <Badge key={vital} variant="secondary">{vital}</Badge>)}
                     </div>
                   </div>
               </CardContent>
@@ -336,11 +388,11 @@ export default function DashboardPage() {
           </div>
           
            {/* Biomarker Analysis */}
-          {data.biomarkerAnalysis && data.biomarkerAnalysis.length > 0 && (
+          {analysis.biomarkerAnalysis && analysis.biomarkerAnalysis.length > 0 && (
             <div>
               <h3 className="text-xl font-semibold mb-4">Key Biomarkers from Report</h3>
                 <div className="space-y-4">
-                    {data.biomarkerAnalysis.map((biomarker, index) => {
+                    {analysis.biomarkerAnalysis.map((biomarker, index) => {
                         const [valStr, normalStr] = [biomarker.value, biomarker.normalRange];
                         const val = parseFloat(valStr);
                         const [min, max] = normalStr.split('-').map(parseFloat);
@@ -403,7 +455,7 @@ export default function DashboardPage() {
           <div>
             <h3 className="text-xl font-semibold mb-4">Ranked Diagnostic Analysis</h3>
             <Accordion type="single" collapsible defaultValue="item-0">
-              {data.conditions?.map((condition, index) => (
+              {analysis.conditions?.map((condition, index) => (
                 <AccordionItem value={`item-${index}`} key={index}>
                   <AccordionTrigger>
                     <div className="flex items-center justify-between w-full pr-4">
@@ -444,146 +496,10 @@ export default function DashboardPage() {
           <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Disclaimer</AlertTitle>
-              <AlertDescription>{data.disclaimer}</AlertDescription>
+              <AlertDescription>{analysis.disclaimer}</AlertDescription>
           </Alert>
 
         </motion.div>
-  );
-
-  return (
-    <div className="flex flex-1 flex-col items-center gap-4 p-4 md:gap-8 md:p-8">
-       <div className="w-full max-w-4xl text-center">
-            <h1 className="text-4xl font-bold text-primary mb-12 flex items-center justify-center gap-3">
-                How are you feeling today? 👼
-            </h1>
-      </div>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-4xl"
-      >
-        <Card className="transition-all hover:shadow-lg">
-          <CardHeader>
-            <CardTitle>AI-Powered Diagnostic Analysis</CardTitle>
-            <CardDescription>
-              Enter symptoms, a detailed description, and/or upload a medical report for a comprehensive analysis.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="symptoms">Key Symptoms (e.g., "Headache")</Label>
-              <Input
-                  id="symptoms"
-                  placeholder="e.g. 'Fever and Cough'"
-                  value={symptoms}
-                  onChange={(e) => setSymptoms(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Detailed Description (Optional)</Label>
-              <Textarea
-                  id="description"
-                  placeholder="e.g. 'I have a high fever, a persistent dry cough, and I've been feeling extremely tired for the past three days.'"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Upload Medical Report (Optional)</Label>
-              <div 
-                className={cn(
-                  "relative flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
-                  isDragging ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
-                )}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept="image/png, image/jpeg, image/webp, application/pdf"
-                  />
-                {reportDataUri ? (
-                  <div className="relative group">
-                    {reportDataUri.startsWith('data:image') ? (
-                        <Image src={reportDataUri} alt="Report preview" width={128} height={128} className="rounded-md object-cover h-32 w-32" />
-                    ): (
-                        <div className="text-center text-muted-foreground p-4">
-                            <p>PDF report uploaded</p>
-                        </div>
-                    )}
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setReportDataUri(null);
-                        if (fileInputRef.current) {
-                            fileInputRef.current.value = '';
-                        }
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground">
-                    <ImageIcon className="mx-auto h-12 w-12" />
-                    <p className="mt-2 text-sm">
-                      <span className="font-semibold text-primary">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs">PNG, JPG, WEBP, or PDF</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleSubmit} disabled={isLoading || (!symptoms && !reportDataUri && !description)}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity />}
-                Run Analysis
-            </Button>
-          </CardFooter>
-        </Card>
-      </motion.div>
-
-      {isLoading && (
-          <div className="w-full max-w-4xl mt-8 flex flex-col items-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="mt-4 text-muted-foreground">AI is analyzing your data... please wait.</p>
-          </div>
-      )}
-
-      {error && (
-         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-full max-w-4xl mt-8"
-        >
-            <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Analysis Failed</AlertTitle>
-                <AlertDescription>
-                    {error}
-                </AlertDescription>
-            </Alert>
-        </motion.div>
-      )}
-
-      {analysis && !isLoading && (
-        analysis.type === 'detailed' 
-          ? renderDetailedAnalysis(analysis.data)
-          : renderSimpleAnalysis(analysis.data)
       )}
     </div>
   );

@@ -8,7 +8,7 @@ import { Bot, User, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { askChatbot } from '@/ai/flows/chatbot';
-import type { Part } from '@genkit-ai/googleai';
+import type { Part } from 'genkit/cohere';
 
 type Message = {
     role: 'user' | 'model';
@@ -36,16 +36,17 @@ export default function ChatbotPage() {
         e.preventDefault();
         if (!input.trim()) return;
 
-        const userMessage = input;
-        const newMessages: Message[] = [...messages, { role: 'user', parts: [{ text: userMessage }] }];
+        const userMessage = { role: 'user', parts: [{ text: input }] } as Message;
+        const newMessages: Message[] = [...messages, userMessage];
         setMessages(newMessages);
+        const currentInput = input;
         setInput('');
         
         setIsLoading(true);
 
         try {
             const response = await askChatbot({
-                query: userMessage,
+                query: currentInput,
                 history: messages
             });
             setMessages([...newMessages, { role: 'model', parts: [{ text: response }] }]);
