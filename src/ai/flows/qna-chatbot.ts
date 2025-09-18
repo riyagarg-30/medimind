@@ -33,8 +33,9 @@ Review the entire conversation history:
 {{/each}}
 
 Based on this history, determine a final diagnosis. Provide a ranked list of 2-4 possible conditions with confidence scores.
+The output should be a list in the format: "- <Condition Name>: <Confidence Score>%"
 
-Respond with the final diagnosis and set the 'isFinal' flag to true. The 'question' field should be a summary of the diagnosis.
+Respond with the final diagnosis and set the 'isFinal' flag to true. The 'question' field should contain ONLY the formatted list of diagnoses.
   `,
 });
 
