@@ -25,15 +25,16 @@ type Message = {
     parts: Part[];
 };
 
-type CurrentUser = {
-  id: number;
-  name: string;
-  email: string;
-  age: number | '';
-  address: string;
-  role: 'user' | 'clinician';
-  profilePic: string;
-  lastCondition?: string;
+type User = {
+    id: number;
+    name: string;
+    email: string;
+    age: number | '';
+    address: string;
+    role: 'user' | 'clinician';
+    profilePic: string;
+    lastCondition?: string;
+    password?: string;
 }
 
 type Condition = {
@@ -55,7 +56,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'input' | 'qna' | 'analysis'>('input');
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   const { toast } = useToast();
@@ -147,6 +148,7 @@ export default function DashboardPage() {
         });
         setDetailedAnalysis(result);
         if (result.conditions && result.conditions.length > 0 && currentUser) {
+            // Save to history
             const historyKey = `symptomHistory_${currentUser.id}`;
             const savedHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
             const newHistoryItem = {
@@ -157,6 +159,17 @@ export default function DashboardPage() {
                 result: result.conditions[0].name
             };
             localStorage.setItem(historyKey, JSON.stringify([newHistoryItem, ...savedHistory]));
+
+            // Update user's last condition
+            const allUsersString = localStorage.getItem('users');
+            if (allUsersString) {
+                let allUsers: User[] = JSON.parse(allUsersString);
+                const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+                if (userIndex !== -1) {
+                    allUsers[userIndex].lastCondition = result.conditions[0].name;
+                    localStorage.setItem('users', JSON.stringify(allUsers));
+                }
+            }
         }
     } catch (err: any) {
         console.error("Detailed analysis failed:", err);
@@ -185,6 +198,8 @@ export default function DashboardPage() {
             setQnaAnalysis({ conditions: parsedConditions });
             setStep('analysis');
             if (parsedConditions.length > 0 && currentUser) {
+                const topCondition = parsedConditions[0].name;
+                // Save to history
                 const historyKey = `symptomHistory_${currentUser.id}`;
                 const savedHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
                 const newHistoryItem = {
@@ -192,9 +207,20 @@ export default function DashboardPage() {
                     date: new Date().toISOString(),
                     inputType: "Symptoms",
                     input: symptoms,
-                    result: parsedConditions[0].name
+                    result: topCondition
                 };
                 localStorage.setItem(historyKey, JSON.stringify([newHistoryItem, ...savedHistory]));
+
+                // Update user's last condition
+                const allUsersString = localStorage.getItem('users');
+                if (allUsersString) {
+                    let allUsers: User[] = JSON.parse(allUsersString);
+                    const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+                    if (userIndex !== -1) {
+                        allUsers[userIndex].lastCondition = topCondition;
+                        localStorage.setItem('users', JSON.stringify(allUsers));
+                    }
+                }
             }
         } else {
             setCurrentQuestion(result);
@@ -280,7 +306,7 @@ export default function DashboardPage() {
                   <CardFooter>
                     <Button onClick={startQnaAnalysis} disabled={isLoading || !symptoms.trim()} size="lg">
                       {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2" />}
-                      Start AI Q&A
+                      Run Analysis
                     </Button>
                   </CardFooter>
                 </Card>
@@ -297,6 +323,7 @@ export default function DashboardPage() {
                         onDragOver={handleDragOver}
                         onDrop={handleDrop}
                         htmlFor="report-upload"
+                        onClick={() => fileInputRef.current?.click()}
                     >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             {reportFile ? (
@@ -571,3 +598,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
