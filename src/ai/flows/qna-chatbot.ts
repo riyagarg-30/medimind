@@ -24,6 +24,7 @@ const diagnosisPrompt = ai.definePrompt({
   name: 'diagnosisPrompt',
   input: {schema: QnaChatbotInputSchema},
   output: {schema: QnaChatbotOutputSchema},
+  model: 'googleai/gemini-1.5-flash',
   prompt: `You are a medical diagnosis AI. Your goal is to determine the most likely condition based on a Q&A conversation with a user. You have been having a conversation with a user about their symptoms.
 
 Review the entire conversation history:
@@ -41,6 +42,7 @@ const questionPrompt = ai.definePrompt({
   name: 'questionPrompt',
   input: {schema: QnaChatbotInputSchema},
   output: {schema: QnaChatbotOutputSchema},
+  model: 'googleai/gemini-1.5-flash',
   prompt: `You are a medical Q&A AI. Your goal is to ask clarifying questions to diagnose a user's condition.
 
 This is the conversation so far:
