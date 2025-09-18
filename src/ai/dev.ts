@@ -4,5 +4,6 @@ config();
 
 import '@/ai/flows/generate-detailed-diagnoses.ts';
 import '@/ai/flows/chatbot.ts';
+import '@/ai/flows/qna-chatbot.ts';
 
     

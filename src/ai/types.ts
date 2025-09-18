@@ -59,7 +59,7 @@ const HistoryMessagePartSchema = z.object({
 });
 
 const HistoryMessageSchema = z.object({
-    role: z.enum(['user', 'model']),
+    role: z.enum(['user', 'model', 'system', 'tool']),
     parts: z.array(HistoryMessagePartSchema),
 });
 
@@ -76,11 +76,9 @@ export const QnaChatbotInputSchema = z.object({
 export type QnaChatbotInput = z.infer<typeof QnaChatbotInputSchema>;
 
 export const QnaChatbotOutputSchema = z.object({
-  question: z.string().describe('The next question to ask the user.'),
-  options: z.array(z.string()).optional().describe('A list of multiple choice options.'),
-  diagnosis: z.string().optional().describe('The final diagnosis.'),
+  question: z.string().describe('The next question to ask the user. If isFinal is true, this contains the diagnosis summary.'),
+  options: z.array(z.string()).optional().describe('A list of multiple choice options for the user to select.'),
   isFinal: z.boolean().describe('Whether this is the final diagnosis or another question.'),
 });
 export type QnaChatbotOutput = z.infer<typeof QnaChatbotOutputSchema>;
-
     
